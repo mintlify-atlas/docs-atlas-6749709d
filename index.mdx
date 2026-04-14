@@ -1,97 +1,91 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "OpenAgents Control: AI that codes in your style"
+description: "OpenAgents Control adds plan-first, approval-gated workflows and a context system to OpenCode, so agents generate code that matches your patterns every time."
 ---
 
-## Setting up
+OpenAgents Control (OAC) is an AI agent framework built on [OpenCode](https://opencode.ai) that solves a core problem with AI-generated code: it never matches your project's patterns. OAC teaches agents your coding standards once, then generates matching code every time — with mandatory approval gates so you stay in control.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get from zero to your first approved plan in under 5 minutes
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="How it works" icon="brain" href="/concepts/how-it-works">
+    Understand the plan-first workflow and approval model
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Agents" icon="robot" href="/agents/overview">
+    OpenAgent, OpenCoder, SystemBuilder, and specialized subagents
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Context system" icon="database" href="/concepts/context-system">
+    Teach your coding patterns — used on every request
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Why OpenAgents Control?
 
-Everything you need to create world-class documentation.
+AI code tools write generic code. You spend hours refactoring it to match your project. OAC fixes this at the source.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+<CardGroup cols={3}>
+  <Card title="Pattern control" icon="fingerprint">
+    Define your patterns once. Agents load them automatically before generating code — no refactoring needed.
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="Approval gates" icon="hand">
+    Agents always propose a plan before executing. Review and approve before any file is written or command is run.
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="Team-ready" icon="users">
+    Commit context files to your repo. Every team member — and every new hire — gets the same standards automatically.
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
+  <Card title="Editable agents" icon="pen-to-square">
+    Agents are markdown files you edit directly. No compilation, no vendor lock-in, no black boxes.
   </Card>
-</Columns>
+  <Card title="Token efficient" icon="bolt">
+    MVI principle loads only what's needed. 80% token reduction compared to loading entire codebase context.
+  </Card>
+  <Card title="Model agnostic" icon="shuffle">
+    Use Claude, GPT, Gemini, or local models. Switch providers without changing your workflow.
+  </Card>
+</CardGroup>
 
-## Need inspiration?
+## Get started in 3 steps
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Steps>
+  <Step title="Install OAC">
+    Run the one-line installer in your project directory to get the developer profile with all core agents and commands.
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s developer
+    ```
+  </Step>
+  <Step title="Add your patterns">
+    Run `/add-context` inside OpenCode to answer 6 questions about your tech stack, patterns, and conventions. Takes 10–15 minutes and unlocks the full value of OAC.
+
+    ```bash
+    opencode --agent OpenAgent
+    > /add-context
+    ```
+  </Step>
+  <Step title="Start building">
+    Use OpenAgent for general tasks or OpenCoder for complex features. Agents discover your patterns, propose a plan, and wait for your approval before writing a single line of code.
+
+    ```bash
+    opencode --agent OpenCoder
+    > "Create a user authentication system with JWT and refresh tokens"
+    ```
+  </Step>
+</Steps>
+
+## Explore the docs
+
+<CardGroup cols={2}>
+  <Card title="Installation guide" icon="download" href="/installation">
+    All installation methods — interactive, profile-based, local vs. global
+  </Card>
+  <Card title="Context system" icon="layers" href="/concepts/context-system">
+    How agents discover and load your coding patterns
+  </Card>
+  <Card title="Commands reference" icon="terminal" href="/commands/overview">
+    All built-in commands: /add-context, /commit, /test, and more
+  </Card>
+  <Card title="Team patterns guide" icon="people-group" href="/guides/team-patterns">
+    Share coding standards across your entire team via git
+  </Card>
+</CardGroup>

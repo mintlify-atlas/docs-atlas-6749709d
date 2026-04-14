@@ -1,0 +1,134 @@
+---
+title: "Environment variables and configuration options"
+description: "All OAC environment variables: OPENCODE_INSTALL_DIR, OPENCODE_BRANCH, Telegram bot settings, and API keys, with defaults, how to set them, and priority order."
+keywords: ["environment variables", "configuration", "OPENCODE_INSTALL_DIR", "OPENCODE_BRANCH", "TELEGRAM", "GEMINI"]
+---
+
+OpenAgents Control uses environment variables to configure the installer's behaviour and to provide credentials to optional plugins and tools. Variables are read at runtime, so you can override any default without modifying source files. The `env.example` file at the repository root lists every variable the project recognises; copy it to `.env` and fill in real values before running tools that depend on these settings.
+
+```bash
+cp env.example .env
+```
+
+## Variable reference
+
+### Installer variables
+
+These two variables are read by `install.sh` and control where and from which branch components are fetched.
+
+| Variable | Description | Default | Example |
+|---|---|---|---|
+| `OPENCODE_INSTALL_DIR` | Directory where components are written | `.opencode` (current directory) | `~/.config/opencode` |
+| `OPENCODE_BRANCH` | Git branch to fetch components from | `main` | `develop` |
+
+**`OPENCODE_INSTALL_DIR`** controls the root of the installation tree. When set to a relative path such as `.opencode`, the installer resolves it relative to the directory from which the script is invoked. When set to an absolute path, files are written there regardless of the working directory.
+
+**`OPENCODE_BRANCH`** lets you pin installations to a non-default branch. This is useful for testing a release candidate or for CI pipelines that must install from a stable branch other than `main`.
+
+### Telegram plugin variables
+
+The `plugin:notify` component can send messages through a Telegram bot. All Telegram variables are optional unless you enable the plugin.
+
+| Variable | Description | Default | Example |
+|---|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather | _(none)_ | `123456789:AAF...` |
+| `TELEGRAM_CHAT_ID` | Target chat ID for notifications | _(none)_ | `987654321` |
+| `TELEGRAM_BOT_USERNAME` | Display username for the bot | `@OpenCode` | `@MyBot` |
+| `TELEGRAM_IDLE_TIMEOUT` | Milliseconds before the bot idles | `300000` (5 minutes) | `600000` |
+| `TELEGRAM_CHECK_INTERVAL` | Polling interval in milliseconds | `30000` (30 seconds) | `10000` |
+| `TELEGRAM_ENABLED` | Whether the plugin is active | `true` | `false` |
+
+### API key variables
+
+| Variable | Description | Default | Example |
+|---|---|---|---|
+| `GEMINI_API_KEY` | Gemini API key for image generation | _(none)_ | `AIzaSy...` |
+| `MINIMAX_API_KEY` | MiniMax API key | _(none)_ | `eyJ...` |
+
+`GEMINI_API_KEY` is required by `tool:gemini` (used by the Image Specialist subagent). Obtain a key from the Google AI Studio at `https://makersuite.google.com/app/apikey`.
+
+`MINIMAX_API_KEY` is required for MiniMax-powered features. Obtain a key from `https://platform.minimax.io`.
+
+## How to set variables
+
+<Tabs>
+  <Tab title="Shell export (session)">
+    Set a variable for the duration of the current shell session:
+
+    ```bash
+    export OPENCODE_INSTALL_DIR=~/.config/opencode
+    export OPENCODE_BRANCH=develop
+    ./install.sh developer
+    ```
+  </Tab>
+  <Tab title="Shell profile (persistent)">
+    Add exports to `~/.bashrc`, `~/.zshrc`, or `~/.profile` for persistence across sessions:
+
+    ```bash
+    # ~/.bashrc or ~/.zshrc
+    export OPENCODE_INSTALL_DIR=~/.config/opencode
+    export OPENCODE_BRANCH=main
+    ```
+
+    Reload the profile after editing:
+
+    ```bash
+    source ~/.bashrc
+    ```
+  </Tab>
+  <Tab title=".env file">
+    Copy the template and fill in values. Tools that load the `tool:env` component will read this file automatically:
+
+    ```bash
+    cp env.example .env
+    ```
+
+    Edit `.env`:
+
+    ```bash
+    TELEGRAM_BOT_TOKEN=your_bot_token_here
+    TELEGRAM_CHAT_ID=your_chat_id_here
+    GEMINI_API_KEY=your_gemini_api_key_here
+    ```
+
+    <Warning>
+      Never commit `.env` to version control. The repository ships with an `env.example` template that documents all variables without containing real credentials.
+    </Warning>
+  </Tab>
+  <Tab title="Inline (one-off)">
+    Set a variable inline for a single invocation without exporting it:
+
+    ```bash
+    OPENCODE_INSTALL_DIR=/opt/opencode ./install.sh developer
+    ```
+  </Tab>
+</Tabs>
+
+## Priority order
+
+When multiple configuration sources supply the same setting, the following order applies (highest priority first):
+
+1. **`--install-dir` CLI argument** — overrides everything else for the installation directory
+2. **Environment variable** (`OPENCODE_INSTALL_DIR` or `OPENCODE_BRANCH`)
+3. **Interactive selection** — prompted when the installer runs in interactive mode
+4. **Built-in default** — `.opencode` for the install directory, `main` for the branch
+
+For example, if `OPENCODE_INSTALL_DIR` is set in your shell profile and you also pass `--install-dir /tmp/test`, the CLI argument wins and the environment variable is ignored for that invocation.
+
+## Non-interactive CI usage
+
+For CI/CD pipelines where interactive prompts are not available, set both installer variables before running the script with a profile name. The presence of a profile argument bypasses all interactive prompts:
+
+```bash
+export OPENCODE_INSTALL_DIR=/opt/opencode
+export OPENCODE_BRANCH=main
+./install.sh developer
+```
+
+<Tip>
+  To use a locally cloned registry instead of fetching from GitHub — for example, in an air-gapped environment — set the `REGISTRY_URL` variable to a `file://` path:
+
+  ```bash
+  REGISTRY_URL="file://$(pwd)/registry.json" ./install.sh developer
+  ```
+</Tip>

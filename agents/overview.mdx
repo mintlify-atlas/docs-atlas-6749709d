@@ -1,0 +1,67 @@
+---
+title: "Agent overview: choosing the right agent"
+description: "OAC ships three main agents — OpenAgent, OpenCoder, and SystemBuilder — each designed for a specific class of work. Learn which one to reach for."
+---
+
+OpenAgents Control ships with three main agents that cover the full spectrum of AI-assisted development, from answering quick questions to generating entire custom AI systems. Each agent is optimized for a different class of work, and choosing the right one from the start saves time and keeps your workflow clean. Subagents run beneath the surface and are delegated to automatically — you never invoke them directly.
+
+## The three main agents
+
+<CardGroup cols={3}>
+  <Card title="OpenAgent" icon="globe" href="/agents/openagent">
+    The universal coordinator. Start here for general tasks, questions, documentation, and anything that touches 1–3 files. Handles most work directly and delegates to specialists only when needed.
+  </Card>
+  <Card title="OpenCoder" icon="code" href="/agents/opencoder">
+    The development specialist. Use for complex features, multi-file refactoring, architecture analysis, and any implementation expected to take more than 60 minutes.
+  </Card>
+  <Card title="SystemBuilder" icon="wand-magic-sparkles" href="/agents/system-builder">
+    The meta-agent. Runs an interactive wizard and generates a complete custom AI system — orchestrators, subagents, context files, workflows, and slash commands — tailored to your domain.
+  </Card>
+</CardGroup>
+
+## When to use each agent
+
+| Scenario | Agent |
+|---|---|
+| Ask a question about code or concepts | OpenAgent |
+| Write or update documentation | OpenAgent |
+| Simple bug fix or 1–3 file change | OpenAgent |
+| Coordinate a general workflow | OpenAgent |
+| Complex feature spanning 4+ files | OpenCoder |
+| Architecture analysis and refactoring | OpenCoder |
+| Multi-language implementation with tests and review | OpenCoder |
+| Build a brand-new domain-specific AI system | SystemBuilder |
+
+## OpenAgent vs OpenCoder at a glance
+
+The two core development agents share the same plan-and-approve workflow, but differ significantly in scope and depth.
+
+| Aspect | OpenAgent | OpenCoder |
+|---|---|---|
+| **Primary use** | General coordinator | Development specialist |
+| **Best for** | Questions, docs, coordination | Complex coding, architecture |
+| **Coding tasks** | Simple (1–3 files) | Complex (4+ files) |
+| **Delegation** | Delegates coding to OpenCoder | Delegates testing and review |
+| **Expertise** | Broad, adaptive | Deep, technical |
+| **User profile** | Everyone (default) | Developers |
+| **Plan detail** | High-level | Implementation-level |
+| **Validation** | Basic | Comprehensive (type, lint, build, test) |
+
+<Tip>
+When in doubt, start with OpenAgent. It will recognize complex tasks and suggest escalating to OpenCoder — or you can switch at any time.
+</Tip>
+
+## Subagents: auto-delegated experts
+
+Subagents are specialized workers invoked automatically by main agents when the work calls for it. You do not invoke subagents directly. They include:
+
+- **ContextScout** — discovers relevant context files before any task runs
+- **ExternalScout** — fetches live documentation for external libraries
+- **TaskManager** — breaks complex features into atomic JSON subtasks
+- **CoderAgent** — executes individual coding subtasks
+- **TestEngineer** — writes unit and integration tests
+- **CodeReviewer** — performs code review and security analysis
+- **BuildAgent** — runs type checks and build validation
+- **DocWriter** — generates and updates documentation
+
+See [Specialized subagents](/agents/subagents) for the full reference.

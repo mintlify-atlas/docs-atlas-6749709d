@@ -1,0 +1,155 @@
+---
+title: "commit: smart conventional commits with AI"
+description: "The /commit command generates a conventional commit message from staged changes, shows it for your approval, then runs git commit with emoji prefix."
+keywords: ["commit", "conventional commits", "git", "commit message", "emoji"]
+---
+
+The `/commit` command handles the full git commit workflow inside your OpenCode session. It analyzes your changes, determines the appropriate commit type and scope, generates a well-formatted message following the [Conventional Commits](https://www.conventionalcommits.org/) specification, and executes the commit after you confirm. There are two variants: the standard `/commit` for any project and `/commit-openagents` for work on the OAC repository itself.
+
+## What `/commit` does
+
+<Steps>
+  <Step title="Pre-commit validation (optional)">
+    Runs `pnpm lint` and `pnpm build` to catch issues before committing. If either fails, you can choose to fix the issues or proceed anyway. Pass a direct message as `$ARGUMENTS` to skip this step.
+  </Step>
+  <Step title="Analyze git status">
+    Runs `git status --porcelain` to detect what has changed. If no files are staged, it automatically runs `git add .` to stage everything. If files are already staged, it commits only those.
+  </Step>
+  <Step title="Analyze the diff">
+    Runs `git diff --cached` and reads the changes to determine the primary change type (`feat`, `fix`, `docs`, `refactor`, etc.) and the scope of the work.
+  </Step>
+  <Step title="Generate the commit message">
+    Selects the matching emoji and type, then composes a message in the format `<emoji> <type>: <description>`. The description is written in imperative mood and kept under 72 characters.
+  </Step>
+  <Step title="Show for approval">
+    Displays the proposed message so you can confirm or cancel before anything is committed.
+  </Step>
+  <Step title="Execute and push">
+    Runs `git commit -m "<message>"` and then `git push`. Displays the commit hash and a brief summary on success.
+  </Step>
+</Steps>
+
+## Conventional commit format
+
+Every message follows `<emoji> <type>: <description>`. The supported types and their emojis are:
+
+<AccordionGroup>
+  <Accordion title="Core types">
+
+| Emoji | Type | When to use |
+|---|---|---|
+| ✨ | `feat` | New feature |
+| 🐛 | `fix` | Bug fix |
+| 📝 | `docs` | Documentation changes |
+| 💄 | `style` | Formatting or style changes |
+| ♻️ | `refactor` | Refactoring without behavior change |
+| ⚡️ | `perf` | Performance improvements |
+| ✅ | `test` | Adding or fixing tests |
+| 🔧 | `chore` | Tooling, configuration, maintenance |
+| 🚀 | `ci` | CI/CD changes |
+| 🗑️ | `revert` | Reverting changes |
+
+  </Accordion>
+  <Accordion title="Additional fix variants">
+
+| Emoji | Type | When to use |
+|---|---|---|
+| 🚨 | `fix` | Resolve compiler or linter warnings |
+| 🔒️ | `fix` | Fix security issues |
+| 🩹 | `fix` | Simple fix for a non-critical issue |
+| 🥅 | `fix` | Catch errors |
+| 👽️ | `fix` | Update code due to external API changes |
+| 🔥 | `fix` | Remove code or files |
+| 🚑️ | `fix` | Critical hotfix |
+| ✏️ | `fix` | Fix typos |
+| 💚 | `fix` | Fix CI build |
+
+  </Accordion>
+  <Accordion title="Additional feature variants">
+
+| Emoji | Type | When to use |
+|---|---|---|
+| 🧵 | `feat` | Multithreading or concurrency |
+| 🔍️ | `feat` | Improve SEO |
+| 🏷️ | `feat` | Add or update types |
+| 💬 | `feat` | Add or update text and literals |
+| 🌐 | `feat` | Internationalization |
+| 👔 | `feat` | Business logic |
+| 📱 | `feat` | Responsive design |
+| 🚸 | `feat` | Improve UX or usability |
+| 💥 | `feat` | Breaking changes |
+| ♿️ | `feat` | Accessibility improvements |
+
+  </Accordion>
+</AccordionGroup>
+
+## Example commit messages
+
+```text
+✨ feat: add user authentication system
+🐛 fix: resolve memory leak in rendering process
+📝 docs: update API documentation with new endpoints
+♻️ refactor: simplify error handling logic in parser
+🚨 fix: resolve linter warnings in component files
+🧑‍💻 chore: improve developer tooling setup process
+👔 feat: implement business logic for transaction validation
+🩹 fix: address minor styling inconsistency in header
+🚑️ fix: patch critical security vulnerability in auth flow
+🎨 style: reorganize component structure for better readability
+```
+
+## `/commit-openagents` — the OAC repository variant
+
+`/commit-openagents` is a specialized variant designed for committing changes to the OAC repository itself. It differs from `/commit` in several ways:
+
+<Tabs>
+  <Tab title="Commit format">
+    Uses conventional commits **without emojis**, with explicit scope paths:
+
+    ```text
+    feat(evals): add parallel test execution support
+    fix(agents/core): correct delegation logic in openagent
+    feat(subagents/code): add build validation to build-agent
+    docs(readme): update installation instructions
+    chore(deps): upgrade evaluation framework dependencies
+    ```
+
+    Valid scopes include `evals`, `agents/core`, `agents/meta`, `subagents/code`, `subagents/development`, `commands`, `context`, `scripts`, `ci`, `docs`, and `registry`.
+  </Tab>
+  <Tab title="Repo health check">
+    Before staging anything, it runs a smart analysis:
+
+    - Compares the `VERSION` file against the latest git tag and flags mismatches
+    - Counts stale automation branches (`chore/version-bump-*`, `docs/auto-sync-*`) and suggests cleanup when there are more than three
+    - Checks for disabled or missing CI workflows
+
+    ```text
+    📊 Repo Health Check:
+    - Current branch: main
+    - Version: 1.2.0 | Latest tag: v1.1.0
+    - Stale branches: 2 automation branches
+    - Uncommitted changes: 4 files
+
+    ⚠️ Issues Found:
+    - Missing release for v1.2.0 (tag not created)
+    ```
+  </Tab>
+  <Tab title="Smart staging">
+    Automatically stages only the files relevant to the detected change type — for example, `.opencode/agent/core/` for core agent changes or `.opencode/command/` for command changes. It never auto-stages `node_modules/`, `.env` files, or `evals/results/`.
+  </Tab>
+  <Tab title="Post-commit guidance">
+    After pushing, explains which CI/CD workflows will be triggered and what to expect — for example, that a `feat:` commit to main will create a version-bump PR automatically.
+  </Tab>
+</Tabs>
+
+## When to use each variant
+
+| Situation | Command |
+|---|---|
+| Committing code in your own project | `/commit` |
+| Committing changes to the OAC repository | `/commit-openagents` |
+| Quick commit with a known message | `/commit "fix typo in README"` |
+
+<Tip>
+Both commands push automatically after committing. If you want to commit without pushing, you can cancel at the push step when prompted.
+</Tip>

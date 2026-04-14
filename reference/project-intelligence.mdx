@@ -1,0 +1,243 @@
+---
+title: "Project intelligence: defining your code patterns"
+description: "project-intelligence/ files teach OAC agents your tech stack, naming conventions, and architecture patterns. Learn to create, update, and version them."
+keywords: ["project intelligence", "add-context", "technical domain", "coding patterns", "context management"]
+---
+
+Project intelligence is a set of markdown files that describe your project's specific coding patterns, architecture decisions, and business context. When agents load these files before generating code, they produce output that matches your project from the start — no refactoring required.
+
+## What project intelligence is
+
+Unlike `core/` files (which contain universal standards), project intelligence files are specific to a single project. They live in `.opencode/context/project-intelligence/` and are **always loaded from the local project directory** — never from a global installation.
+
+Project intelligence answers the questions an experienced team member would know:
+- What tech stack are we using and why?
+- How do we structure an API endpoint?
+- What naming conventions do we follow?
+- What security checks are required on every endpoint?
+- How do we organize React components?
+
+## The project-intelligence/ directory
+
+```
+.opencode/context/project-intelligence/
+├── navigation.md              # Quick overview and routes (required)
+├── technical-domain.md        # Tech stack, architecture, code patterns
+├── business-domain.md         # Problem statement, users, value proposition
+├── business-tech-bridge.md    # How business needs map to technical solutions
+├── decisions-log.md           # Major decisions with rationale and alternatives
+└── living-notes.md            # Active issues, technical debt, open questions
+```
+
+<Note>
+Every file in this directory follows the MVI (Minimal Viable Information) principle: under 200 lines, scannable in under 30 seconds. The goal is not comprehensive documentation — it's the minimum an agent needs to write code that matches your style.
+</Note>
+
+## What goes in each file
+
+<AccordionGroup>
+  <Accordion title="technical-domain.md — tech stack and code patterns" defaultOpen>
+    The most important file for code generation. Contains:
+
+    - **Primary stack**: language, framework, database, infrastructure, key libraries with versions and rationale
+    - **Architecture pattern**: monolith, microservices, serverless, or agent-based with a brief explanation
+    - **Project structure**: key directories and what each contains
+    - **Key technical decisions**: choices made with their rationale and impact
+    - **Integration points**: external APIs, databases, services
+    - **Code patterns**: actual examples of how you write API endpoints, components, database queries
+
+    This is the file `/add-context` creates when you answer the 6 questions.
+  </Accordion>
+  <Accordion title="business-domain.md — project context">
+    Describes why the project exists. Useful for agents making architectural decisions or writing documentation. Contains: project identity and problem statement, target user segments, value proposition, success metrics, and business constraints.
+  </Accordion>
+  <Accordion title="business-tech-bridge.md — connecting intent to implementation">
+    Maps business requirements to technical decisions. Helps agents understand why specific technical choices were made, preventing them from suggesting alternatives that would conflict with business constraints.
+  </Accordion>
+  <Accordion title="decisions-log.md — decision history">
+    Records major technical decisions with their rationale and the alternatives that were considered. Prevents agents from re-opening settled debates and helps them understand constraints they must work within.
+  </Accordion>
+  <Accordion title="living-notes.md — current state">
+    Active issues, technical debt, and open questions. Updated frequently. Agents use this to avoid touching known unstable areas and to understand current priorities.
+  </Accordion>
+</AccordionGroup>
+
+## How /add-context creates these files
+
+Running `/add-context` starts an interactive wizard that asks 6 questions and creates `technical-domain.md` with your answers.
+
+<Steps>
+  <Step title="Run /add-context">
+    ```bash
+    /add-context
+    ```
+    The wizard takes 10–15 minutes on the first run.
+  </Step>
+  <Step title="Answer the 6 questions">
+    1. **Tech stack** — e.g., "Next.js + TypeScript + PostgreSQL + Tailwind"
+    2. **API endpoint example** — paste a real endpoint from your project
+    3. **Component example** — paste a real React (or framework) component
+    4. **Naming conventions** — e.g., "kebab-case files, PascalCase components, camelCase variables"
+    5. **Code standards** — e.g., "TypeScript strict mode, Zod validation, Drizzle ORM"
+    6. **Security requirements** — e.g., "validate input, parameterized queries, auth on every endpoint"
+  </Step>
+  <Step title="Review the generated file">
+    `/add-context` creates `.opencode/context/project-intelligence/technical-domain.md` with your patterns structured for agent consumption. Review and refine the file directly if the wizard output needs adjusting.
+  </Step>
+  <Step title="Commit to your repository">
+    ```bash
+    git add .opencode/context/
+    git commit -m "docs: Add project intelligence context"
+    git push
+    ```
+    All team members now automatically use the same patterns. New developers inherit them on day 1.
+  </Step>
+</Steps>
+
+## Example project intelligence file
+
+The following shows what a completed `technical-domain.md` looks like when populated with real project patterns:
+
+<CodeGroup>
+
+```markdown technical-domain.md (API pattern)
+<!-- Context: project-intelligence/technical | Priority: high | Version: 1.0 | Updated: 2025-01-12 -->
+
+# Technical Domain
+
+## Primary Stack
+
+| Layer | Technology | Version | Rationale |
+|---|---|---|---|
+| Language | TypeScript | 5.x | Strict typing, team standard |
+| Framework | Next.js | 14 | Full-stack, RSC support |
+| Database | PostgreSQL | 15 | Relational, Drizzle ORM |
+| Validation | Zod | 3.x | Schema validation, type inference |
+
+## API Endpoint Pattern
+
+All API endpoints follow this structure:
+
+export async function POST(request: Request) {
+  try {
+    // 1. Parse and validate
+    const body = await request.json();
+    const validated = UserSchema.parse(body);
+
+    // 2. Check authentication
+    const user = await auth.verify(request);
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 3. Process
+    const result = await db.users.create(validated);
+
+    // 4. Return
+    return Response.json({ success: true, data: result }, { status: 201 });
+  } catch (error) {
+    console.error('POST /users error:', error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+}
+```
+
+```markdown technical-domain.md (component pattern)
+## React Component Pattern
+
+All components:
+- Use TypeScript with strict mode
+- Export named component (not default)
+- Include JSDoc comments
+- Use React.FC type with explicit Props interface
+
+interface UserCardProps {
+  userId: string;
+  onSelect?: (id: string) => void;
+}
+
+/**
+ * UserCard - Displays user information in a card
+ */
+export const UserCard: React.FC<UserCardProps> = ({ userId, onSelect }) => {
+  const [user, setUser] = React.useState(null);
+
+  React.useEffect(() => {
+    fetchUser(userId).then(setUser);
+  }, [userId]);
+
+  return (
+    <div className="user-card">
+      <h3>{user?.name}</h3>
+      <button onClick={() => onSelect?.(userId)}>Select</button>
+    </div>
+  );
+};
+
+## Naming Conventions
+
+- Files: kebab-case (user-card.tsx)
+- Components: PascalCase (UserCard)
+- Functions: verbPhrase (getUser, validateEmail)
+- Constants: UPPER_CASE
+- Types/Interfaces: PascalCase
+- Predicates: isValid, hasPermission, canAccess
+```
+
+</CodeGroup>
+
+## Keeping project intelligence updated
+
+Project intelligence should evolve as your project does. Run `/add-context --update` whenever:
+- You add a new library or change your tech stack
+- You adopt a new API response format or component pattern
+- Your security requirements change
+- You migrate between tools (e.g., Prisma → Drizzle)
+
+```bash
+/add-context --update
+```
+
+Agents automatically use updated patterns after the file is saved. No restart required.
+
+## Version tracking
+
+Every project intelligence file carries a frontmatter comment with version and date:
+
+```html
+<!-- Context: project-intelligence/technical | Priority: high | Version: 1.2 | Updated: 2025-03-15 -->
+```
+
+Version increments follow these rules:
+
+| Change type | Version bump |
+|---|---|
+| New file | 1.0 |
+| Content addition or update | Minor (1.0 → 1.1) |
+| Structure change | Major (1.0 → 2.0) |
+| Typo fix | Patch (not tracked in version) |
+
+When you run `/add-context --update`, the version is incremented automatically (e.g., 1.0 → 1.1) and the `Updated` date is refreshed.
+
+## Multiple projects: local overrides global
+
+Each project's `.opencode/context/project-intelligence/` is completely independent. A project-level `technical-domain.md` that describes a Python/FastAPI stack does not conflict with another project using Next.js/TypeScript — each project loads only its own intelligence.
+
+<CardGroup cols={2}>
+  <Card title="Project A (local)" icon="folder">
+    `.opencode/context/project-intelligence/technical-domain.md`  
+    Stack: Next.js + TypeScript + PostgreSQL  
+    Used only when working in Project A
+  </Card>
+  <Card title="Project B (local)" icon="folder">
+    `.opencode/context/project-intelligence/technical-domain.md`  
+    Stack: Python + FastAPI + MongoDB  
+    Used only when working in Project B
+  </Card>
+</CardGroup>
+
+There is no global project intelligence. The global installation (`~/.config/opencode/`) never contains project-specific patterns — only core standards that apply universally.
+
+<Tip>
+Store team patterns by committing `.opencode/context/` to your repository. Every team member who clones the repo gets the same project intelligence automatically, and new developers inherit team standards on day 1.
+</Tip>

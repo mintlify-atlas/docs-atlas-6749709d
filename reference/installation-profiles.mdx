@@ -1,0 +1,312 @@
+---
+title: "Installation profiles: pre-configured component sets"
+description: "All five OAC profiles — essential, developer, business, full, advanced — with component lists, install commands, and guidance on combining multiple profiles."
+keywords: ["profiles", "installation", "essential", "developer", "business", "full", "advanced", "components"]
+---
+
+An installation profile is a named list of components stored in `registry.json` under the `profiles` key. When you pass a profile name to `install.sh`, the installer fetches `registry.json`, resolves every component in that profile's list, and copies the matching files into your chosen install directory. Profiles exist so you can go from zero to a working agent setup in a single command without manually selecting dozens of individual files.
+
+## Selecting a profile
+
+```bash
+./install.sh [profile]
+```
+
+Replace `[profile]` with one of the five names below. You can also pipe directly from GitHub:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh) developer
+```
+
+## The five profiles
+
+### essential
+
+**Minimal starter kit — universal agent with core subagents.**
+
+Good for learning the system or lightweight tasks where you don't need code-generation tools. Upgrade to `developer` or `business` for full features.
+
+<Tabs>
+  <Tab title="Agents & subagents">
+    - `agent:openagent`
+    - `subagent:task-manager`
+    - `subagent:contextscout`
+    - `subagent:documentation`
+  </Tab>
+  <Tab title="Commands & tools">
+    - `command:context`
+    - `command:add-context`
+    - `command:clean`
+    - `tool:env`
+    - `skill:task-management`
+  </Tab>
+  <Tab title="Contexts & config">
+    - `context:essential-patterns`
+    - `context:project-context`
+    - `context:quick-start`
+    - `context:standards-code` / `standards-tests` / `standards-docs` / `standards-analysis` / `standards-patterns`
+    - `context:task-delegation-basics`
+    - `context:session-management`
+    - `context:feature-breakdown`
+    - `context:workflows-review`
+    - `context:system-context-guide`
+    - `context:adding-skill-basics`
+    - `config:env-example`
+    - `config:agent-metadata`
+  </Tab>
+</Tabs>
+
+```bash
+./install.sh essential
+```
+
+---
+
+### developer
+
+**Complete software development environment.** `RECOMMENDED`
+
+Includes code generation, testing, review, build tools, UI/UX patterns, development principles, and design systems. Use OpenAgent for general tasks (1–4 files) or OpenCoder for complex architecture (4+ files).
+
+<Tabs>
+  <Tab title="Agents & subagents">
+    - `agent:openagent`
+    - `agent:opencoder`
+    - `subagent:task-manager`
+    - `subagent:frontend-specialist`
+    - `subagent:devops-specialist`
+    - `subagent:documentation`
+    - `subagent:coder-agent`
+    - `subagent:reviewer`
+    - `subagent:tester`
+    - `subagent:build-agent`
+    - `subagent:contextscout`
+  </Tab>
+  <Tab title="Commands & tools">
+    - `command:commit`
+    - `command:test`
+    - `command:context`
+    - `command:add-context`
+    - `command:clean`
+    - `command:optimize`
+    - `command:validate-repo`
+    - `command:analyze-patterns`
+    - `tool:env`
+    - `skill:task-management`
+  </Tab>
+  <Tab title="Contexts & config">
+    - `context:essential-patterns`
+    - `context:project-context`
+    - `context:quick-start`
+    - `context:core/*` (all core context files)
+    - `context:project-intelligence/*`
+    - `context:ui/*`
+    - `context:development/*`
+    - `context:design-systems`
+    - `context:react-patterns`
+    - `context:animation-basics` / `animation-components` / `animation-advanced`
+    - `context:ui-styling-standards`
+    - `context:clean-code`
+    - `context:api-design`
+    - `context:adding-skill-basics`
+    - `context:openagents-repo/*`
+    - `config:env-example`
+    - `config:agent-metadata`
+    - `config:readme`
+  </Tab>
+</Tabs>
+
+```bash
+./install.sh developer
+```
+
+---
+
+### business
+
+**Business process automation, content creation, and visual workflows.**
+
+Includes image generation via Gemini, a notification plugin, and documentation tools. Does not include code-generation subagents.
+
+<Tabs>
+  <Tab title="Agents & subagents">
+    - `agent:openagent`
+    - `agent:copywriter`
+    - `agent:technical-writer`
+    - `agent:data-analyst`
+    - `subagent:task-manager`
+    - `subagent:contextscout`
+    - `subagent:documentation`
+    - `subagent:image-specialist`
+  </Tab>
+  <Tab title="Commands & tools">
+    - `command:context`
+    - `command:add-context`
+    - `command:clean`
+    - `command:prompt-enhancer`
+    - `tool:env`
+    - `tool:gemini`
+    - `plugin:notify`
+    - `skill:task-management`
+  </Tab>
+  <Tab title="Contexts & config">
+    - `context:essential-patterns`
+    - `context:project-context`
+    - `context:quick-start`
+    - `context:core/*`
+    - `context:project-intelligence/*`
+    - `context:adding-skill-basics`
+    - `config:env-example`
+    - `config:agent-metadata`
+    - `config:readme`
+  </Tab>
+</Tabs>
+
+```bash
+./install.sh business
+```
+
+---
+
+### full
+
+**Everything included — all agents, subagents, tools, and plugins for maximum functionality.** Includes all UI/UX patterns, development principles, and design systems. Does not include the system-builder meta-agents.
+
+<Tabs>
+  <Tab title="Agents & subagents">
+    - All agents: `openagent`, `opencoder`, `eval-runner`, `copywriter`, `technical-writer`, `data-analyst`
+    - All subagents: `task-manager`, `frontend-specialist`, `devops-specialist`, `documentation`, `coder-agent`, `reviewer`, `tester`, `build-agent`, `contextscout`, `image-specialist`
+  </Tab>
+  <Tab title="Commands & tools">
+    - `command:test`, `commit`, `context`, `add-context`, `clean`, `optimize`, `prompt-enhancer`, `worktrees`, `validate-repo`, `analyze-patterns`
+    - `tool:env`, `tool:gemini`
+    - `plugin:notify`
+    - `skill:task-management`
+  </Tab>
+  <Tab title="Contexts & config">
+    - All contexts from `essential`, `developer`, and `business` profiles
+    - `context:core/*`, `context:ui/*`, `context:development/*`, `context:project-intelligence/*`, `context:openagents-repo/*`
+    - `config:env-example`, `config:agent-metadata`, `config:readme`
+  </Tab>
+</Tabs>
+
+```bash
+./install.sh full
+```
+
+---
+
+### advanced
+
+**Full installation plus System Builder for creating custom AI architectures.** For power users and contributors. Includes system-builder templates, repository management tools, and the complete context system.
+
+<Tabs>
+  <Tab title="Agents & subagents">
+    - Everything in `full`, plus:
+    - `agent:system-builder`
+    - `agent:repo-manager`
+    - `subagent:context-retriever`
+    - `subagent:domain-analyzer`
+    - `subagent:agent-generator`
+    - `subagent:context-organizer`
+    - `subagent:workflow-designer`
+    - `subagent:command-creator`
+  </Tab>
+  <Tab title="Commands & tools">
+    - Everything in `full`, plus:
+    - `command:build-context-system`
+  </Tab>
+  <Tab title="Contexts & config">
+    - Everything in `full`, plus:
+    - `context:system-builder-guide`
+    - `context:orchestrator-template`
+    - `context:subagent-template`
+    - `context:context-system` and `context:context-system/*`
+    - `context:registry-dependencies`
+    - `context:templates`
+    - `context:frontmatter`
+    - `context:codebase-references`
+    - Additional paths: `.Building/`, `.github/workflows/`
+  </Tab>
+</Tabs>
+
+```bash
+./install.sh advanced
+```
+
+---
+
+## Custom installation
+
+If no profile matches your needs, run the installer without arguments to enter interactive mode:
+
+```bash
+./install.sh
+```
+
+Interactive mode lets you:
+
+1. Choose an install location (local `.opencode/`, global `~/.config/opencode/`, or a custom path).
+2. Select **Custom Install** to pick individual components by type.
+3. Review the selection and confirm before any files are written.
+
+You can also list all available components without installing:
+
+```bash
+./install.sh --list
+```
+
+## Mixing profiles
+
+Install a base profile, then add individual components from another:
+
+<Steps>
+  <Step title="Install the base profile">
+    ```bash
+    ./install.sh developer
+    ```
+  </Step>
+  <Step title="Re-run the installer in custom mode">
+    ```bash
+    ./install.sh
+    ```
+    Select **Custom Install**, choose only the additional components you need (for example, `tool:gemini` and `plugin:notify` from the `business` profile), and confirm.
+  </Step>
+  <Step title="Choose collision handling">
+    When prompted, select **Skip existing** to leave your already-installed files untouched and only write the new ones.
+  </Step>
+</Steps>
+
+## Re-installing and updating
+
+### Add only new components
+
+```bash
+./install.sh developer
+# When prompted, choose: Option 1 — Skip existing
+```
+
+Existing files are preserved; only components not yet present are written.
+
+### Update all components
+
+```bash
+./install.sh developer
+# When prompted, choose: Option 3 — Backup & overwrite
+```
+
+All components are updated to their latest versions. A timestamped backup is created at `.opencode.backup.{timestamp}/` before any files are overwritten.
+
+<Warning>
+  **Option 2 — Overwrite all** replaces every file without creating a backup. Any customisations you have made to agent or context files will be lost. Prefer **Backup & overwrite** unless you are certain you want to discard local changes.
+</Warning>
+
+### Migrate to a different location
+
+```bash
+# Move an existing installation
+mv .opencode ~/.config/opencode
+
+# Or perform a fresh install to the new location
+./install.sh developer --install-dir ~/.config/opencode
+```

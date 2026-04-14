@@ -1,0 +1,252 @@
+---
+title: "Customizing and extending OAC agents"
+description: "Edit agent markdown files to change system prompts, tool permissions, temperature, and workflow rules without recompiling or vendor lock-in."
+keywords: ["customize agents", "agent markdown", "tool permissions", "temperature", "system prompt", "extend agents"]
+---
+
+Unlike IDE plugins or black-box AI tools, OAC agents are plain markdown files with YAML frontmatter. You can open them in any editor, read exactly what instructions the agent follows, and change that behavior by editing text. No compilation, no vendor portal, no SDK required. This page explains what you can change, where the files live, and what to watch out for when modifying agent behavior.
+
+## What is customizable
+
+<CardGroup cols={2}>
+  <Card title="System prompt / instructions" icon="file-text">
+    The markdown body below the frontmatter is the agent's instruction set. Add project rules, change workflows, or append constraints.
+  </Card>
+  <Card title="Model selection" icon="cpu">
+    Set the `model` field in frontmatter to use a different AI model for a specific agent.
+  </Card>
+  <Card title="Tool permissions" icon="shield">
+    Control which shell commands require approval, which are denied entirely, and which file paths are off-limits for editing.
+  </Card>
+  <Card title="Temperature" icon="thermometer">
+    Adjust the `temperature` field to make an agent more deterministic (lower) or more exploratory (higher).
+  </Card>
+</CardGroup>
+
+## Agent file structure
+
+Every agent file has two sections: a YAML frontmatter block and a markdown body. Here is the actual structure from `opencoder.md`:
+
+```markdown
+---
+name: OpenCoder
+description: "Orchestration agent for complex coding, architecture, and multi-file refactoring"
+mode: primary
+temperature: 0.1
+permission:
+  bash:
+    "rm -rf *": "ask"
+    "sudo *": "deny"
+    "chmod *": "ask"
+    "curl *": "ask"
+    "wget *": "ask"
+    "docker *": "ask"
+    "kubectl *": "ask"
+  edit:
+    "**/*.env*": "deny"
+    "**/*.key": "deny"
+    "**/*.secret": "deny"
+    "node_modules/**": "deny"
+    "**/__pycache__/**": "deny"
+    "**/*.pyc": "deny"
+    ".git/**": "deny"
+---
+
+# Development Agent
+Always use ContextScout for discovery of new tasks or context files.
+...
+```
+
+The frontmatter controls the agent's identity and operating constraints. The markdown body contains the agent's instructions, workflow stages, and behavioral rules.
+
+## Where agent files live
+
+<Tabs>
+  <Tab title="Local project installation">
+    Installed per-project with `bash install.sh developer`:
+
+    ```
+    .opencode/
+    └── agent/
+        └── core/
+            ├── opencoder.md
+            └── openagent.md
+    ```
+
+    Edit with:
+    ```bash
+    nano .opencode/agent/core/opencoder.md
+    ```
+  </Tab>
+  <Tab title="Global installation">
+    Installed globally to `~/.config/opencode/`:
+
+    ```
+    ~/.config/opencode/
+    └── agent/
+        └── core/
+            ├── opencoder.md
+            └── openagent.md
+    ```
+
+    Edit with:
+    ```bash
+    nano ~/.config/opencode/agent/core/opencoder.md
+    ```
+  </Tab>
+</Tabs>
+
+## Tool permissions configuration
+
+The `permission` block in the frontmatter defines how the agent handles potentially dangerous operations. Each entry under `bash` or `edit` is a glob pattern mapped to one of three values:
+
+- `"ask"` — Agent must request approval before running this command or editing this path
+- `"deny"` — Agent is blocked from running this command or editing this path entirely
+- `"limited"` — Agent can proceed with reduced scope (bash-specific)
+
+Here is the default permission set from `openagent.md` for comparison:
+
+```yaml
+permission:
+  bash:
+    "*": "ask"
+    "rm -rf *": "ask"
+    "rm -rf /*": "deny"
+    "sudo *": "deny"
+    "> /dev/*": "deny"
+  edit:
+    "**/*.env*": "deny"
+    "**/*.key": "deny"
+    "**/*.secret": "deny"
+    "node_modules/**": "deny"
+    ".git/**": "deny"
+```
+
+OpenAgent uses `"*": "ask"` to require approval for all bash commands. OpenCoder is more permissive for read operations but still requires approval for destructive commands.
+
+To add a project-specific restriction—for example, preventing edits to a generated file—append to the `edit` block:
+
+```yaml
+  edit:
+    "**/*.env*": "deny"
+    "**/*.key": "deny"
+    "src/generated/**": "deny"   # Add this line
+```
+
+## Temperature settings
+
+OpenCoder uses `temperature: 0.1`—near-deterministic output suited to production code generation where consistency matters. OpenAgent uses `temperature: 0.2` for slightly more variation when handling general questions and diverse tasks.
+
+Lower temperatures make agents follow instructions more literally and produce more repeatable results. Higher temperatures make agents more creative but less predictable.
+
+```yaml
+# Near-deterministic: good for code implementation
+temperature: 0.1
+
+# Slightly exploratory: good for general tasks and Q&A
+temperature: 0.2
+```
+
+## Adding rules to existing agents
+
+To add project-specific rules to OpenCoder without rewriting the entire file, append a section at the end of the markdown body:
+
+```markdown
+## Project-Specific Rules
+
+- Always use Zod for input validation in API routes
+- Never use `any` type in TypeScript; use `unknown` and narrow explicitly
+- All database queries must go through the repository layer in `src/repositories/`
+- API responses must follow the `{ success, data, error }` format defined in context
+```
+
+These additions extend the agent's instruction set. Because they appear after the core workflow definition, they act as additional constraints the agent applies on top of its default behavior.
+
+<Warning>
+Modifying the core workflow stages (Discover, Propose, InitSession, Plan, Execute, Validate) can break the approval gate mechanism. Add rules after the existing workflow rather than replacing stage definitions.
+</Warning>
+
+## When to create new agents vs customize existing ones
+
+<AccordionGroup>
+  <Accordion title="Customize existing agents (most cases)">
+    For project-specific rules, permission adjustments, or model changes, edit the existing agent file. This keeps the proven workflow intact while adapting behavior to your needs.
+
+    Good examples:
+    - Adding a rule that all endpoints must use a specific auth middleware
+    - Changing the model to a cheaper option for subagents
+    - Restricting bash permissions to match your deployment environment
+  </Accordion>
+
+  <Accordion title="Create a new category agent">
+    If you need a specialist that handles a specific domain not covered by the existing agents—a DevOps specialist, a data analyst, a copywriter—create a new file in the appropriate category directory:
+
+    ```
+    .opencode/agent/
+    ├── development/
+    │   └── my-specialist.md
+    └── content/
+        └── my-writer.md
+    ```
+
+    The agent frontmatter template from the category system:
+
+    ```yaml
+    ---
+    name: My Specialist
+    description: "Brief description for subagent discovery"
+    mode: primary
+    temperature: 0.1
+    permission:
+      bash:
+        "*": "ask"
+      edit:
+        "**/*.env*": "deny"
+    ---
+    ```
+  </Accordion>
+
+  <Accordion title="Use SystemBuilder for complete new systems">
+    If you need a full suite of custom agents—orchestrators, subagents, context files, and commands—tailored to a specific domain, use the SystemBuilder:
+
+    ```bash
+    opencode --agent SystemBuilder
+    > "Create a customer support AI system"
+    ```
+
+    SystemBuilder runs an interactive wizard that generates a complete agent architecture. This is the right approach when you need agents that don't map to any existing OAC category.
+  </Accordion>
+</AccordionGroup>
+
+## Example: adding a rule and testing it
+
+<Steps>
+  <Step title="Open the agent file">
+    ```bash
+    nano .opencode/agent/core/opencoder.md
+    ```
+  </Step>
+
+  <Step title="Scroll to the end of the file and add your rule">
+    ```markdown
+    ## Project Constraints
+
+    - All new API routes must be placed in `src/app/api/` following Next.js App Router conventions
+    - Every new route must include a Zod schema for request validation
+    - Use `db` from `src/lib/db.ts` for all database access—never import Prisma directly
+    ```
+  </Step>
+
+  <Step title="Save and start a new session">
+    ```bash
+    opencode --agent OpenCoder
+    > "Add a POST endpoint for creating invoices"
+    ```
+
+    The agent will load your new rules as part of its instruction set and apply them when proposing the implementation plan.
+  </Step>
+</Steps>
+
+<Tip>
+Test your customizations on a small, low-risk task before using them on production features. A rule that is too broad or conflicts with the agent's workflow stages can produce unexpected proposals.
+</Tip>

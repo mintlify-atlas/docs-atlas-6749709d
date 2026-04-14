@@ -1,0 +1,409 @@
+---
+title: "Installing OpenAgents Control on any platform"
+description: "Install OpenAgents Control with one-line curl, interactively, or by profile. Covers local vs. global placement, platform-specific notes, and troubleshooting."
+---
+
+The OAC installer is a single Bash script that downloads agents, commands, context files, and tools from GitHub into an `.opencode/` directory. It works on macOS, Linux, and Windows (via Git Bash or WSL), and requires only Bash 3.2+, `curl`, and `jq`.
+
+## Installation methods
+
+<Tabs>
+  <Tab title="One-line curl">
+    The fastest way to install. Pass a profile name after `bash -s` to skip the interactive menu:
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s developer
+    ```
+
+    Installs to `.opencode/` in your current directory. Replace `developer` with any [profile name](#available-profiles).
+  </Tab>
+  <Tab title="Interactive">
+    Run without arguments to get a guided menu. The interactive flow lets you choose your install location, select a profile or individual components, and review what will be installed before confirming:
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash
+    ```
+
+    The menu walks you through:
+    1. **Installation location** — local (`.opencode/`), global (`~/.config/opencode/`), or custom path
+    2. **Installation mode** — quick profile, custom component selection, or list available components
+    3. **Review and confirm** — see exactly what will be installed before proceeding
+  </Tab>
+  <Tab title="Download and run">
+    Download the script first for offline use, inspection, or repeated installs:
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh -o install.sh
+    chmod +x install.sh
+
+    # Interactive
+    ./install.sh
+
+    # With a profile
+    ./install.sh developer
+    ```
+  </Tab>
+</Tabs>
+
+## Installation locations
+
+Where you install determines which projects can use OAC and how patterns are shared.
+
+### Local installation (recommended for teams)
+
+Installs to `.opencode/` in your current project directory. This is the default when no `--install-dir` flag is provided.
+
+```bash
+./install.sh developer
+# Equivalent to:
+./install.sh developer --install-dir .opencode
+```
+
+**Use local when:**
+- You want project-specific agents or overrides
+- You commit context files to git so the whole team shares patterns
+- You need isolated installations across multiple projects
+
+**Result:**
+
+```text
+your-project/
+├── .opencode/
+│   ├── agent/
+│   ├── command/
+│   ├── context/
+│   └── tool/
+└── your-project-files...
+```
+
+### Global installation
+
+Installs to `~/.config/opencode/` for access from any directory.
+
+```bash
+./install.sh developer --install-dir ~/.config/opencode
+# Or via environment variable:
+export OPENCODE_INSTALL_DIR=~/.config/opencode
+./install.sh developer
+```
+
+**Use global when:**
+- You want agents available in every project without re-installing
+- You prefer a single installation to keep up to date
+- You are working across many projects without per-project patterns
+
+<Note>
+  When both a local and global installation exist, local always wins. ContextScout checks `.opencode/context/core/` first; if found, global is never consulted. Project intelligence (your tech stack and patterns) is always local — it is never loaded from `~/.config/opencode/`.
+</Note>
+
+### Custom installation path
+
+Use `--install-dir` to install to any directory:
+
+```bash
+# Named path
+./install.sh developer --install-dir ~/my-agents
+
+# Absolute path
+./install.sh developer --install-dir /opt/opencode
+
+# Path with spaces (quote it)
+./install.sh developer --install-dir "~/My Agents/opencode"
+```
+
+You can also set `OPENCODE_INSTALL_DIR` in your shell profile for persistent custom paths:
+
+```bash
+# Add to ~/.bashrc or ~/.zshrc
+export OPENCODE_INSTALL_DIR=~/.config/opencode
+```
+
+**Priority order** when multiple sources specify the install directory:
+
+1. `--install-dir` CLI argument (highest)
+2. `OPENCODE_INSTALL_DIR` environment variable
+3. Interactive selection (if running without arguments)
+4. Default: `.opencode` in current directory (lowest)
+
+## Available profiles
+
+Each profile is a pre-configured set of components. Choose the one that matches your workflow.
+
+| Profile | Best for | What's included |
+|---|---|---|
+| `essential` | Minimal setup, evaluating OAC | Core agents (OpenAgent), essential contexts, basic config |
+| `developer` | Everyday coding work (recommended) | OpenAgent, OpenCoder, TaskManager; code subagents (reviewer, tester, coder-agent, build-agent); dev commands; contexts |
+| `business` | Content and non-engineering work | Business agents, content creation tools, documentation agents, business contexts |
+| `full` | Everything except system-builder | All agents, subagents, commands, tools, contexts, and config |
+| `advanced` | Complete system with all components | Everything in `full` plus SystemBuilder agents and advanced configuration |
+
+```bash
+# Install a specific profile
+curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s essential
+curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s developer
+curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s business
+curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s full
+curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s advanced
+```
+
+## Platform-specific notes
+
+<Tabs>
+  <Tab title="Linux">
+    Most Linux distributions ship with Bash 4.0 or higher. Installation works out of the box.
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s developer
+    ```
+
+    Install dependencies if missing:
+
+    ```bash
+    # Ubuntu / Debian
+    sudo apt-get install curl jq
+
+    # Fedora / RHEL / CentOS
+    sudo dnf install curl jq
+
+    # Arch Linux
+    sudo pacman -S curl jq
+
+    # Alpine Linux
+    apk add curl jq bash
+    ```
+  </Tab>
+  <Tab title="macOS">
+    macOS ships with Bash 3.2 — the minimum supported version. No upgrade is required.
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s developer
+    ```
+
+    Install dependencies via Homebrew if needed:
+
+    ```bash
+    brew install curl jq
+    ```
+
+    To install to the macOS-native config location:
+
+    ```bash
+    ./install.sh developer --install-dir ~/Library/Application\ Support/opencode
+    ```
+  </Tab>
+  <Tab title="Windows (Git Bash)">
+    Git Bash is the recommended way to run OAC on Windows. It ships with Bash 4.4+ and `curl`.
+
+    1. Download and install [Git for Windows](https://git-scm.com/download/win) with default options.
+    2. Open **Git Bash** from the Start menu.
+    3. Run the installer:
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s developer
+    ```
+
+    For a Windows-style install path:
+
+    ```bash
+    ./install.sh developer --install-dir C:/Users/username/opencode
+    ```
+  </Tab>
+  <Tab title="Windows (WSL)">
+    WSL runs a full Linux environment and uses the same commands as Linux.
+
+    Enable WSL from PowerShell (Admin):
+
+    ```powershell
+    wsl --install
+    ```
+
+    Then in your WSL terminal:
+
+    ```bash
+    # Install dependencies (Ubuntu/Debian)
+    sudo apt-get update && sudo apt-get install curl jq
+
+    # Run the installer
+    curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s developer
+    ```
+  </Tab>
+</Tabs>
+
+## Collision handling
+
+When you re-run the installer into a directory that already has OAC files, it detects collisions and asks how to proceed. This protects any customizations you have made.
+
+| Option | What happens | Use when |
+|---|---|---|
+| **Skip existing** (safest) | Installs new files only; existing files untouched | You have customized agents or context and want to add new components only |
+| **Overwrite all** (destructive) | Replaces all existing files with latest versions | You want to reset to defaults and have not customized anything |
+| **Backup and overwrite** (recommended for updates) | Backs up existing files to `.opencode.backup.{timestamp}/`, then installs | You want latest versions and a safety net to restore from |
+| **Cancel** | No changes made | You want to review or manually back up first |
+
+To restore from a backup:
+
+```bash
+# List available backups
+ls -la .opencode.backup.*/
+
+# Restore a single file
+cp .opencode.backup.20251118-143022/.opencode/agent/my-agent.md .opencode/agent/
+
+# Restore everything
+rm -rf .opencode
+mv .opencode.backup.20251118-143022/.opencode .opencode
+```
+
+## Updating
+
+Run the dedicated update script to pull the latest versions of all installed components:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/update.sh | bash
+```
+
+If you installed to a custom location, pass the path:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/update.sh | bash -s -- --install-dir ~/.config/opencode
+```
+
+Alternatively, re-run the installer and choose **Backup and overwrite** at the collision prompt.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="curl: command not found or jq: command not found">
+    Install the missing dependency for your platform:
+
+    ```bash
+    # macOS
+    brew install curl jq
+
+    # Ubuntu / Debian
+    sudo apt-get install curl jq
+
+    # Fedora / RHEL
+    sudo dnf install curl jq
+
+    # Arch Linux
+    sudo pacman -S curl jq
+
+    # Windows Git Bash — install jq manually
+    curl -L -o /usr/bin/jq.exe https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe
+    ```
+  </Accordion>
+
+  <Accordion title="Permission denied when creating directories">
+    Install to a directory you own, or create the parent directory first:
+
+    ```bash
+    # Install to a path you own
+    ./install.sh developer --install-dir ~/opencode
+
+    # Or create the parent before installing globally
+    mkdir -p ~/.config
+    ./install.sh developer --install-dir ~/.config/opencode
+    ```
+
+    Avoid running the installer with `sudo` when installing to `.opencode/` in your project — it installs files your user owns by default.
+  </Accordion>
+
+  <Accordion title="Script exits immediately on Ubuntu 24.04 / bash 5.x">
+    This was a known issue fixed in v1.1.0. Older versions of the installer used `((variable++))` arithmetic that triggered `set -e` exit when counters started at 0 in bash 5.x.
+
+    Update to the latest installer:
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh > install.sh
+    bash install.sh developer
+    ```
+  </Accordion>
+
+  <Accordion title="Bash version too old">
+    Check your version and upgrade if needed:
+
+    ```bash
+    bash --version
+    ```
+
+    The minimum required version is 3.2. macOS ships with 3.2.57, which is sufficient. To upgrade on macOS:
+
+    ```bash
+    brew install bash
+    ```
+
+    On Linux, update via your package manager:
+
+    ```bash
+    # Ubuntu / Debian
+    sudo apt-get update && sudo apt-get upgrade bash
+    ```
+  </Accordion>
+
+  <Accordion title="Installation fails with a path that contains spaces">
+    Always quote paths with spaces:
+
+    ```bash
+    ./install.sh developer --install-dir "~/My Agents/opencode"
+    ```
+  </Accordion>
+
+  <Accordion title="Parent directory does not exist">
+    Create the parent directory before installing:
+
+    ```bash
+    mkdir -p ~/.config
+    ./install.sh developer --install-dir ~/.config/opencode
+    ```
+  </Accordion>
+
+  <Accordion title="Script fails on Windows PowerShell">
+    PowerShell cannot run Bash scripts directly. Use Git Bash or WSL:
+
+    ```powershell
+    # Download the script first
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh" -OutFile "install.sh"
+
+    # Run with Git Bash
+    & "C:\Program Files\Git\bin\bash.exe" install.sh developer
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Advanced options
+
+```bash
+# List all available components without installing
+./install.sh --list
+
+# Show all options and usage examples
+./install.sh --help
+
+# Install from a different branch (for testing)
+export OPENCODE_BRANCH=develop
+./install.sh developer
+
+# Non-interactive install for CI/CD pipelines
+export OPENCODE_INSTALL_DIR=/opt/opencode
+export OPENCODE_BRANCH=main
+./install.sh developer
+```
+
+## Verify your installation
+
+After installing, confirm the expected directories are present:
+
+```bash
+# Local installation
+ls -la .opencode/
+
+# Global installation
+ls -la ~/.config/opencode/
+```
+
+Then run OpenCode to confirm agents are available:
+
+```bash
+opencode --agent OpenAgent
+```

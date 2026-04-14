@@ -1,0 +1,154 @@
+---
+title: "Sharing coding patterns across your team"
+description: "Commit your .opencode/context/ directory to git so every developer inherits team standards automatically, with no per-user setup required."
+keywords: ["team patterns", "shared context", "git workflow", "coding standards", "onboarding"]
+---
+
+Every team writes code differently until they don't. Without a shared reference, AI-generated code reflects whoever ran the session last rather than your team's established conventions. OAC solves this by storing coding patterns as markdown files that live in your repository—so every developer, including new hires, works from the same baseline from day one.
+
+## The team pattern problem
+
+When developers use AI coding tools independently, each session produces code shaped by whatever context that developer happened to provide. The result is inconsistent naming, conflicting architectural choices, and refactoring PRs that exist purely to homogenize style. Reviewing AI output for style compliance burns the same time you hoped AI would save.
+
+OAC addresses this directly: patterns are stored in `.opencode/context/`, committed to the repository, and loaded automatically by agents before generating any code. The team lead defines the standards once; everyone else inherits them.
+
+## How OAC distributes patterns through git
+
+<Steps>
+  <Step title="Team lead adds patterns">
+    From the project root, run the interactive wizard:
+
+    ```bash
+    /add-context
+    ```
+
+    Answer the six questions about your tech stack, example endpoints, component patterns, naming conventions, code standards, and security requirements. The wizard writes your answers to `.opencode/context/project-intelligence/technical-domain.md`.
+  </Step>
+
+  <Step title="Commit the context directory">
+    Add the generated context files to your repository:
+
+    ```bash
+    git add .opencode/context/
+    git commit -m "chore: add team coding standards to OAC context"
+    git push
+    ```
+  </Step>
+
+  <Step title="Team members pull and use">
+    Any developer who pulls the branch immediately has the team patterns available. No additional setup is required—ContextScout discovers and loads the patterns automatically at the start of each session.
+
+    ```bash
+    git pull
+    opencode --agent OpenCoder
+    # Agents now use your team's patterns
+    ```
+  </Step>
+</Steps>
+
+## Which context directory to use
+
+OAC separates context into two distinct locations with different scopes:
+
+<CardGroup cols={2}>
+  <Card title="project-intelligence/" icon="folder">
+    Your team's custom patterns: tech stack, API conventions, component structure, naming rules, security requirements. Always stored in `.opencode/context/project-intelligence/`. Always local—never loaded from global.
+  </Card>
+  <Card title="core/" icon="folder-open">
+    Universal standards: code quality principles, security patterns, workflow definitions. Can be sourced from global (`~/.config/opencode/context/core/`) when no local copy exists.
+  </Card>
+</CardGroup>
+
+<Info>
+Project intelligence is always local. ContextScout never falls back to global for `project-intelligence/` files—your team's patterns must live in the repository.
+</Info>
+
+## Local vs global installation for teams
+
+The OAC installer asks whether to install locally (per-project) or globally (per-developer). For teams, **local installation is recommended**:
+
+| Setup | Where agent files live | Where project patterns live |
+|-------|------------------------|------------------------------|
+| Local (`bash install.sh developer`) | `.opencode/agent/` in project | `.opencode/context/project-intelligence/` |
+| Global (`~/.config/opencode/`) | `~/.config/opencode/agent/` | `.opencode/context/project-intelligence/` |
+
+With local installation, the `.opencode/` directory is part of the repo, so agent configuration and context travel together. Global installation is better suited to personal defaults that apply across many projects.
+
+## Onboarding new developers with OAC
+
+A new developer clones the repository and immediately has access to the team's patterns:
+
+```bash
+git clone https://github.com/your-org/your-project.git
+cd your-project
+# OAC context is already present in .opencode/context/
+opencode --agent OpenCoder
+# Agents load team patterns automatically—no manual setup
+```
+
+There is nothing to configure. ContextScout reads the committed context files and loads them before generating code.
+
+## Keeping patterns current with /add-context --update
+
+Your codebase evolves. When you introduce a new library, change your API response format, or migrate an ORM, run:
+
+```bash
+/add-context --update
+```
+
+This updates `project-intelligence/technical-domain.md` with your new answers, increments the version number (for example, `1.0` to `1.1`), and refreshes the timestamp. Commit and push the updated file the same way you would any documentation change:
+
+```bash
+git add .opencode/context/project-intelligence/
+git commit -m "chore: update OAC context for Stripe integration"
+git push
+```
+
+All agents on the team begin using the updated patterns on their next pull.
+
+## Project-specific overrides vs shared global patterns
+
+OAC uses a local-first resolution strategy:
+
+```
+1. Check local: .opencode/context/core/navigation.md
+   ↓ Found? → Use local for everything. Done.
+   ↓ Not found?
+2. Check global: ~/.config/opencode/context/core/navigation.md
+   ↓ Found? → Use global for core/ files only.
+   ↓ Not found? → Proceed without core context.
+```
+
+This means a project can override a global standard by providing a local file with the same path. If your team's security requirements differ from the global defaults, create `.opencode/context/core/standards/security-patterns.md` in the repository and it will take precedence for everyone who works on that project.
+
+<Tip>
+Use global context for personal workflow preferences (editor conventions, comment style) and project-local context for everything that must be consistent across the team.
+</Tip>
+
+## Example git workflow
+
+A complete example, from setting up patterns to onboarding a new team member:
+
+```bash
+# Team lead: initial setup
+/add-context
+git add .opencode/
+git commit -m "chore: add team coding standards (Next.js, TypeScript, Drizzle)"
+git push origin main
+
+# Later: add a new library
+/add-context --update
+git add .opencode/context/project-intelligence/
+git commit -m "chore: update OAC context—add Stripe integration patterns"
+git push origin main
+
+# New developer: nothing extra needed
+git clone https://github.com/your-org/your-project.git
+cd your-project
+opencode --agent OpenCoder
+# Team patterns are available immediately
+```
+
+<Note>
+Add `.opencode/context/` to git but consider adding `.opencode/context/project-intelligence/` to your `.gitignore` if your project-intelligence files contain information you do not want in the repository. In that case, distribute them through a shared internal location instead.
+</Note>

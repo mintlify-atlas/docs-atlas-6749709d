@@ -1,0 +1,87 @@
+---
+title: "What is OpenAgents Control?"
+description: "OpenAgents Control teaches agents your patterns once, then generates matching code on every request with mandatory approval gates before any file is written."
+---
+
+OpenAgents Control (OAC) is an AI agent framework built on [OpenCode](https://opencode.ai) that solves a fundamental problem with AI-generated code: generic output that never matches your project. OAC teaches your coding patterns to agents once — then every request produces code that fits your architecture, naming conventions, and standards, with a mandatory approve-before-execute workflow so you stay in control.
+
+## What problem OAC solves
+
+Most AI tools write generic code. Ask for an API endpoint and you get a bare-bones handler. Ask for a React component and you get plain JSX with no adherence to your validation library, ORM, error format, or naming conventions. You spend as much time refactoring the output as you would have writing it yourself.
+
+```typescript
+// What a generic AI gives you
+export async function POST(request: Request) {
+  const data = await request.json();
+  return Response.json({ success: true });
+}
+
+// What OAC generates (using your patterns)
+export async function POST(request: Request) {
+  const body = await request.json();
+  const validated = UserSchema.parse(body);       // Your Zod validation
+  const result = await db.users.create(validated); // Your Drizzle ORM
+  return Response.json(result, { status: 201 });   // Your response format
+}
+```
+
+OAC fixes this at the source. ContextScout discovers your relevant patterns before any code is generated. Agents load your standards — your stack, your conventions, your security requirements — and produce matching code from the start.
+
+## Key differentiators
+
+<CardGroup cols={2}>
+  <Card title="Context system" icon="database">
+    ContextScout discovers relevant patterns from your context files before generating code. Agents load only what they need (MVI principle), keeping token usage low while ensuring every output matches your project.
+  </Card>
+  <Card title="Approval gates" icon="hand">
+    Agents always propose a plan before executing. No file is written, no command is run, and no subagent is delegated to without your explicit approval. You review every step before it happens.
+  </Card>
+  <Card title="Editable agents" icon="pen-to-square">
+    Agents are markdown files you edit directly in `.opencode/agent/`. Change workflows, add constraints, restrict behavior — no compilation, no vendor lock-in, no proprietary plugin system.
+  </Card>
+  <Card title="MVI token efficiency" icon="bolt">
+    Minimal Viable Information design keeps context files under 200 lines. ContextScout lazy-loads only relevant files. Result: up to 80% token reduction compared to loading full codebase context.
+  </Card>
+  <Card title="Model agnostic" icon="shuffle">
+    Works with Claude, GPT, Gemini, MiniMax, and local models. Configure different models per agent, or use your OpenCode default for everything. Switch providers without changing your workflow.
+  </Card>
+  <Card title="Team-ready" icon="users">
+    Store patterns in `.opencode/context/project/` and commit to git. Every team member — including new hires — automatically gets the same coding standards on day one.
+  </Card>
+</CardGroup>
+
+## How OAC compares
+
+OAC is designed for teams and developers who have established coding patterns and want AI to follow them consistently. Here is how it compares to other tools:
+
+| Feature | OpenAgents Control | Cursor / Copilot | Aider |
+|---|---|---|---|
+| **Learn your patterns** | Built-in context system | No pattern learning | No pattern learning |
+| **Approval gates** | Always required | Optional (default off) | Auto-executes |
+| **Token efficiency** | MVI principle (up to 80% reduction) | Full context loaded | Full context loaded |
+| **Team standards** | Shared context files in git | Per-user settings | No team support |
+| **Edit agent behavior** | Markdown files you edit | Proprietary / baked-in | Limited prompts |
+| **Model choice** | Any model, any provider | Limited options | OpenAI / Claude only |
+| **Error recovery** | Human-guided validation | Auto-retry (can loop) | Auto-retry |
+| **Best for** | Production code, teams | Quick prototypes | Solo developers |
+
+<Tip>
+  Use OAC when you have established coding patterns and want code that ships without refactoring. If you need fully autonomous parallel execution and don't require approval gates, consider a different tool.
+</Tip>
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get from zero to your first approved agent plan in under five minutes
+  </Card>
+  <Card title="How it works" icon="brain" href="/concepts/how-it-works">
+    Understand the six-stage workflow, ContextScout, and approval model
+  </Card>
+  <Card title="Agents" icon="robot" href="/agents/overview">
+    OpenAgent, OpenCoder, SystemBuilder, and all specialized subagents
+  </Card>
+  <Card title="Context system" icon="layers" href="/concepts/context-system">
+    Teach your patterns once — loaded automatically on every request
+  </Card>
+</CardGroup>

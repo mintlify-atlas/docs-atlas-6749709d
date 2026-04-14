@@ -1,0 +1,119 @@
+{
+  "projectType": "framework",
+  "projectName": "OpenAgents Control",
+  "projectDescription": "An AI agent framework for OpenCode that delivers plan-first, approval-gated development workflows with a context system that teaches agents your coding patterns for repeatable, production-ready code generation.",
+  "theme": "palm",
+  "primaryColor": "#848c8e",
+  "lightColor": "#11161e",
+  "darkColor": "#cfd0d2",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/how-it-works",
+              "concepts/context-system",
+              "concepts/approval-gates",
+              "concepts/mvi-principle"
+            ]
+          },
+          {
+            "group": "Agents",
+            "pages": [
+              "agents/overview",
+              "agents/openagent",
+              "agents/opencoder",
+              "agents/system-builder",
+              "agents/subagents"
+            ]
+          },
+          {
+            "group": "Commands & Workflows",
+            "pages": [
+              "commands/overview",
+              "commands/add-context",
+              "commands/commit",
+              "commands/test-and-optimize"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/team-patterns",
+              "guides/model-configuration",
+              "guides/customizing-agents",
+              "guides/claude-code-plugin"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Context System",
+            "pages": [
+              "reference/context-files",
+              "reference/context-resolution",
+              "reference/project-intelligence"
+            ]
+          },
+          {
+            "group": "Configuration & Registry",
+            "pages": [
+              "reference/registry",
+              "reference/installation-profiles",
+              "reference/environment-variables"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "reference/external-libraries",
+              "reference/multi-language-support"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Plan-first workflow with mandatory approval gates before any code execution",
+    "Context System (MVI principle) that loads your coding patterns for 80% token reduction",
+    "ContextScout smart pattern discovery that ranks and loads only relevant context files",
+    "Editable agents as plain markdown files — no compilation, no vendor lock-in",
+    "Multi-language support: TypeScript, Python, Go, Rust, C#, and more",
+    "Model-agnostic: Claude, GPT, Gemini, local models — any OpenCode-supported provider",
+    "Team-ready shared context via git-committed .opencode/context/ directory",
+    "SystemBuilder wizard for generating domain-specific custom AI systems",
+    "ExternalScout for fetching live, version-accurate external library documentation",
+    "8 specialized subagents (ContextScout, TaskManager, CoderAgent, TestEngineer, CodeReviewer, BuildAgent, DocWriter, ExternalScout)"
+  ],
+  "publicApiSurface": [
+    "opencode --agent OpenAgent",
+    "opencode --agent OpenCoder",
+    "opencode --agent SystemBuilder",
+    "/add-context — interactive wizard to define project coding patterns",
+    "/commit — conventional commit workflow",
+    "/test — testing workflow command",
+    "/optimize — code optimization command",
+    "/context — context management command",
+    "/analyze-patterns — analyze existing codebase patterns",
+    "/build-context-system — scaffold context system from scratch",
+    "install.sh [profile] [--install-dir PATH] — installer script",
+    "update.sh — update existing installation",
+    "oac CLI (packages/cli) — init, add, list, status, update, apply, doctor subcommands",
+    "registry.json — component registry for agents, subagents, commands, contexts, tools"
+  ]
+}

@@ -1,0 +1,108 @@
+---
+title: "Approval gates: staying in control of AI"
+description: "Approval gates require you to confirm every plan before execution. No file is written, no command runs, and no subagent is delegated without your sign-off."
+keywords: ["approval gates", "human-guided", "propose", "approve", "execute", "plan review", "control"]
+---
+
+Approval gates are the mechanism that keeps you in control of what the AI does. Before any agent writes a file, runs a bash command, or delegates to a subagent, it must present a plan and wait for your explicit approval. This is not an optional feature — it is a fundamental part of how OAC works.
+
+## What approval gates are
+
+An approval gate is a mandatory pause between the agent proposing what it intends to do and actually doing it. The agent cannot skip this pause. It cannot auto-approve on your behalf. Every consequential action requires a human decision first.
+
+This design choice comes from a simple observation: it is far cheaper to reject a bad plan before execution than to undo the consequences of one that ran unchecked.
+
+## When agents request approval
+
+Agents request approval before:
+
+- **Writing or editing files** — any file creation or modification
+- **Running bash commands** — any shell execution, including installs, builds, and tests
+- **Delegating to subagents** — handing off work to TestEngineer, CodeReviewer, TaskManager, etc.
+- **Making database schema changes** — Drizzle migrations or other schema updates
+- **Any other change to your codebase or environment**
+
+<Warning>
+  Approval gates are always required. There is no configuration option to disable them or set auto-approve. If you want fully autonomous execution without approval steps, OAC is not the right tool for that workflow.
+</Warning>
+
+## The Propose → Approve → Execute flow
+
+Every implementation follows the same three-step flow:
+
+<Steps>
+  <Step title="Propose">
+    The agent analyzes your request, loads your context files, and drafts a concrete implementation plan. This plan lists every component, endpoint, schema, and file that will be created or modified. It also notes that all code will follow your patterns from context.
+  </Step>
+  <Step title="Approve">
+    The plan is shown to you in full. You read it, evaluate whether it matches your intent, and decide:
+    - **Approve** — type `y` or confirm, and execution begins
+    - **Reject** — type `n`, and the agent stops. No changes are made.
+    - **Modify** — describe what you want changed. The agent revises the plan and presents it again.
+  </Step>
+  <Step title="Execute">
+    Only after approval does the agent begin implementation. It works incrementally, validating after each step. If something fails validation, it surfaces the issue to you rather than silently retrying in a loop.
+  </Step>
+</Steps>
+
+## What a proposed plan looks like
+
+When you ask for a feature, the agent's proposal looks like this:
+
+```text
+## Proposed Implementation
+
+Components:
+- user-dashboard.tsx (main page)
+- profile-settings.tsx (settings component)
+- auth-guard.tsx (authentication wrapper)
+
+API Endpoints:
+- /api/user/profile (GET, POST)
+- /api/auth/session (GET)
+
+Database:
+- users table (Drizzle schema)
+- sessions table (Drizzle schema)
+
+All code will follow YOUR patterns from context.
+
+Approve? [y/n]
+```
+
+The plan is specific enough that you can verify it covers your requirements and nothing unexpected is included.
+
+## How to review plans effectively
+
+A good plan review takes 1–2 minutes. Here is what to check:
+
+<AccordionGroup>
+  <Accordion title="Does the scope match your request?">
+    Look at the list of files and endpoints. If you asked for a login form and the plan includes a notifications table, ask why before approving.
+  </Accordion>
+  <Accordion title="Are the file names correct?">
+    Check that naming conventions match your project. The agent should follow your patterns, but it is worth verifying on complex requests.
+  </Accordion>
+  <Accordion title="Are any files missing?">
+    If your project requires a test file for every component, confirm the plan includes one. If it does not, ask the agent to add it before approving.
+  </Accordion>
+  <Accordion title="Does the database schema look right?">
+    For any database work, verify the tables and columns align with your data model. Schema changes are harder to reverse than code changes.
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  If a plan looks mostly right but needs one adjustment, describe the change directly. For example: "Approve, but rename `auth-guard.tsx` to `route-guard.tsx` to match our naming pattern." The agent will incorporate the change before executing.
+</Tip>
+
+## What happens when you reject or modify a plan
+
+**If you reject:** The agent stops completely. No files are written, no commands run. You can start a new request with revised instructions.
+
+**If you ask for modifications:** The agent revises the plan based on your feedback and presents a new version for approval. This loop continues until you approve or reject. There is no limit on revisions.
+
+**If execution fails mid-way:** The agent surfaces the error to you rather than auto-retrying. You decide whether to continue, roll back, or take a different approach.
+
+<Info>
+  Approval gates apply to subagent delegation as well. When the main agent hands off to TestEngineer or CodeReviewer, that delegation is shown to you before it happens.
+</Info>

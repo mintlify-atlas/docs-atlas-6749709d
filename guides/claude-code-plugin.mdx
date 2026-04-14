@@ -1,0 +1,222 @@
+---
+title: "Using OAC as a Claude Code plugin (beta)"
+description: "Install OAC directly into Claude Code via the plugin marketplace to get the 6-stage workflow, 7 specialized subagents, and context-aware code generation."
+keywords: ["Claude Code plugin", "OAC plugin", "beta", "subagents", "workflow skills", "plugin install"]
+---
+
+OpenAgents Control is available as a Claude Code plugin alongside the native OpenCode version. The plugin brings OAC's core capabilities—context-aware code generation, approval gates, and structured multi-stage workflows—into Claude Code without requiring a separate CLI installation. As of this writing, the Claude Code plugin is in **BETA** and is actively tested and ready for early adopters.
+
+<Note>
+The Claude Code plugin is separate from the OpenCode-native version of OAC. Installation steps and available commands differ between the two. This page covers the Claude Code plugin only.
+</Note>
+
+## Installation
+
+<Steps>
+  <Step title="Register the marketplace">
+    Add the OpenAgents Control marketplace repository to Claude Code:
+
+    ```bash
+    /plugin marketplace add darrenhinde/OpenAgentsControl
+    ```
+  </Step>
+
+  <Step title="Install the plugin">
+    Install the OAC plugin from the registered marketplace:
+
+    ```bash
+    /plugin install oac
+    ```
+  </Step>
+
+  <Step title="Download context files">
+    Pull the core context files (coding standards, workflows, patterns) into your project:
+
+    ```bash
+    /oac:setup --core
+    ```
+
+    You can also download all context files or a specific category:
+
+    ```bash
+    /oac:setup --all
+    /oac:setup --category=standards
+    ```
+  </Step>
+
+  <Step title="Start building">
+    The plugin is ready. Start a development task as you normally would:
+
+    ```
+    Add a login endpoint
+    ```
+
+    The `using-oac` skill is automatically invoked when you start a development task, guiding the session through the 6-stage workflow.
+  </Step>
+</Steps>
+
+## The 6-stage workflow
+
+Every development task in the Claude Code plugin follows a structured six-stage process with built-in approval gates:
+
+<Steps>
+  <Step title="Analyze and discover">
+    The agent understands the requirements and invokes the `context-discovery` skill to find relevant context files—coding standards, security patterns, naming conventions specific to your project.
+  </Step>
+
+  <Step title="Plan and approve">
+    The agent presents an implementation plan and **waits for your approval** before proceeding. This is a hard gate; the workflow does not continue until you confirm.
+  </Step>
+
+  <Step title="Load context">
+    All discovered context files are read and loaded upfront. This pre-loading step means execution stages have everything they need without triggering nested discovery calls.
+  </Step>
+
+  <Step title="Execute">
+    For simple tasks (1–3 files), the agent implements directly. For complex tasks (4+ files), it invokes the `task-breakdown` skill to decompose work into atomic subtasks, which can run in parallel.
+  </Step>
+
+  <Step title="Validate">
+    Tests and validation run. If anything fails, the agent **stops and reports** rather than attempting an automatic fix. Fixes require your approval.
+  </Step>
+
+  <Step title="Complete">
+    Documentation is updated, changes are summarized, and results are returned.
+  </Step>
+</Steps>
+
+## The 7 specialized subagents
+
+The plugin ships with seven subagents that execute specialized tasks in isolated contexts. Only the main orchestrating agent can invoke subagents—subagents cannot call each other.
+
+<AccordionGroup>
+  <Accordion title="task-manager">
+    Breaks down complex features into atomic, verifiable subtasks with dependency tracking and JSON-based progress management. Called when a feature requires 4 or more files or has multi-step dependencies.
+
+    **Model**: Sonnet
+  </Accordion>
+
+  <Accordion title="context-scout">
+    Discovers relevant context files, standards, and patterns using navigation-driven discovery. Called at the start of every task to locate the coding standards that apply.
+
+    **Model**: Haiku (lightweight—fast context lookup)
+  </Accordion>
+
+  <Accordion title="context-manager">
+    Manages `.oac` configuration files and personal task systems. Handles context file organization and updates when you change your project's standards.
+
+    **Model**: Haiku
+  </Accordion>
+
+  <Accordion title="coder-agent">
+    Executes individual coding subtasks with full context awareness, self-review, and quality validation. Called by the main agent for each implementation unit.
+
+    **Model**: Sonnet
+  </Accordion>
+
+  <Accordion title="test-engineer">
+    Generates comprehensive tests using TDD principles. Includes coverage analysis and validation against the test standards in your context files.
+
+    **Model**: Sonnet
+  </Accordion>
+
+  <Accordion title="code-reviewer">
+    Performs code review with security analysis, quality checks, and actionable feedback against your project's code standards.
+
+    **Model**: Sonnet
+  </Accordion>
+
+  <Accordion title="external-scout">
+    Fetches current documentation for external libraries and frameworks from Context7 and other sources, with local caching. Called when the agent detects external package usage to avoid relying on potentially outdated training data.
+
+    **Model**: Haiku
+  </Accordion>
+</AccordionGroup>
+
+## Skills and commands
+
+The plugin provides 9 workflow skills and 6 user commands.
+
+### Workflow skills
+
+Skills guide the main agent through specific workflows. They are invoked automatically or with a slash command:
+
+| Skill | Invoked by | Purpose |
+|-------|-----------|---------|
+| `using-oac` | Auto (session start) | Main 6-stage workflow orchestrator |
+| `context-discovery` | `/context-discovery` | Discover and load relevant context files |
+| `external-scout` | `/external-scout` | Fetch external library documentation |
+| `task-breakdown` | `/task-breakdown` | Decompose complex features into subtasks |
+| `code-execution` | `/code-execution` | Execute coding tasks with context awareness |
+| `test-generation` | `/test-generation` | Generate tests using TDD principles |
+| `code-review` | `/code-review` | Perform security and quality code review |
+| `install-context` | `/install-context` | Download context files from the repository |
+| `parallel-execution` | Auto (when `parallel: true`) | Execute independent subtasks simultaneously |
+
+### User commands
+
+Commands you invoke directly:
+
+<CardGroup cols={2}>
+  <Card title="/oac:setup" icon="download">
+    Download context files. Use `--core` for standards and workflows, `--all` for everything, or `--category=<name>` for a specific subset.
+  </Card>
+  <Card title="/oac:plan" icon="list">
+    Start the planning phase for a feature before committing to implementation. Use this to review the proposed task breakdown before any code is written.
+  </Card>
+  <Card title="/oac:status" icon="info">
+    Show plugin version, installed context version, available subagents and skills, and context file count.
+  </Card>
+  <Card title="/oac:help" icon="help-circle">
+    Show the usage guide for OAC workflow, skills, subagents, and commands. Append a skill name for targeted help: `/oac:help context-discovery`.
+  </Card>
+  <Card title="/oac:cleanup" icon="trash">
+    Remove old temporary files from `.tmp/`. Supports `--session-days`, `--task-days`, and `--external-days` options to control what gets removed.
+  </Card>
+</CardGroup>
+
+## Context discovery
+
+The plugin's context-scout subagent searches for your coding standards across multiple locations in priority order:
+
+```
+.oac config (project root)
+.claude/context/
+context/
+.opencode/context/
+```
+
+You can add context from several sources beyond local files:
+
+- **GitHub repositories**: Pull standards from a shared team repository
+- **Git worktrees**: Reference standards from another branch
+- **Local files**: Add any local markdown file as context
+- **URLs**: Fetch context from a web-accessible source
+
+## Differences from the OpenCode version
+
+The Claude Code plugin is architecturally adapted for Claude Code's delegation model, which requires a flat hierarchy:
+
+<CardGroup cols={2}>
+  <Card title="Claude Code plugin" icon="plug">
+    - Flat delegation: main agent → skills → subagents
+    - Skills invoke subagents via `context: fork`
+    - 7 subagents (includes context-manager)
+    - 9 skills + 6 user commands
+    - Model: `opusplan` by default (Opus for orchestration, Sonnet for execution)
+    - Installed via `/plugin install oac`
+  </Card>
+  <Card title="OpenCode native" icon="terminal">
+    - Nested delegation supported: agents can invoke subagents recursively
+    - 3 main agents + 9+ specialized subagents
+    - Productivity commands (`/add-context`, `/commit`, `/test`)
+    - Model: OpenCode default unless overridden per agent
+    - Installed via `bash install.sh`
+  </Card>
+</CardGroup>
+
+Both versions share the same context file format (`.opencode/context/`) and the same core principles: context-aware code generation, approval gates, and repeatable results.
+
+<Warning>
+The Claude Code plugin is in BETA. Some features may change between releases. Use `/oac:status` to verify your installed version and check the [repository](https://github.com/darrenhinde/OpenAgentsControl) for release notes before updating.
+</Warning>

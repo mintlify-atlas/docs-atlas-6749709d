@@ -1,80 +1,197 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Get started with OpenAgents Control"
+description: "Install OAC, add your coding patterns, and run your first agent — from zero to an approved implementation plan in under five minutes."
 ---
 
-## Get started in three steps
+OpenAgents Control runs on top of [OpenCode](https://opencode.ai). The installer sets up agents, commands, and context files in your project directory (or globally). Once installed, you start OpenCode with one of the OAC agents, add your patterns, and the approve-before-execute workflow handles the rest.
 
-Get your documentation site running locally and make your first customization.
+<Steps>
+  <Step title="Check prerequisites">
+    You need three things before installing:
 
-### Step 1: Set up your local environment
+    - **OpenCode CLI** — the open-source AI coding framework OAC builds on. The OAC installer will prompt you to set it up if it is not already installed. See the [OpenCode docs](https://opencode.ai/docs) for details.
+    - **Bash 3.2 or higher** — macOS ships with Bash 3.2 by default; Linux distros typically ship with 4.0 or higher. Run `bash --version` to check.
+    - **Git** — required for committing context files and sharing patterns with your team.
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    <Note>
+      On Windows, use Git Bash (recommended) or WSL. The installer does not support cmd.exe or PowerShell directly.
+    </Note>
+  </Step>
 
-### Step 2: Deploy your changes
+  <Step title="Install OAC">
+    Run one command in your project directory. The `developer` profile installs the core agents, development subagents, commands, and context files needed for everyday coding work.
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    <CodeGroup>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    ```bash developer (recommended)
+    curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s developer
+    ```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```bash essential (minimal)
+    curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s essential
+    ```
 
-### Step 3: Go live
+    ```bash full (everything except system-builder)
+    curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s full
+    ```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    </CodeGroup>
+
+    This installs to `.opencode/` in your current directory. After installation your project structure will look like this:
+
+    ```
+    your-project/
+    ├── .opencode/
+    │   ├── agent/       # OpenAgent, OpenCoder, subagents
+    │   ├── command/     # /add-context, /commit, /test, and more
+    │   ├── context/     # MVI context files (core + project)
+    │   └── tool/
+    └── your-project-files...
+    ```
+
+    To install globally (available to all projects), add `--install-dir ~/.config/opencode`. See the [installation guide](/installation) for all options.
+  </Step>
+
+  <Step title="Add your patterns">
+    This step is what makes OAC different from generic AI tools. Run `/add-context` inside OpenCode to teach agents your tech stack, conventions, and standards. It takes 10–15 minutes and answers 6 questions.
+
+    ```bash
+    opencode --agent OpenAgent
+    ```
+
+    Once inside OpenCode, run:
+
+    ```
+    /add-context
+    ```
+
+    You will be asked about:
+    1. Your tech stack (for example: Next.js + TypeScript + PostgreSQL + Tailwind)
+    2. An example API endpoint from your codebase
+    3. An example component from your codebase
+    4. Your naming conventions (kebab-case files, PascalCase components, camelCase variables)
+    5. Your code standards (TypeScript strict mode, Zod validation, etc.)
+    6. Your security requirements (input validation, parameterized queries, etc.)
+
+    <Tip>
+      You can skip this step and OAC will still work — but agents will generate generic code. Adding context is what produces output that matches your project from the first line.
+    </Tip>
+
+    After adding context, commit the files so your whole team benefits:
+
+    ```bash
+    git add .opencode/context/
+    git commit -m "Add team coding standards to OAC context"
+    git push
+    ```
+  </Step>
+
+  <Step title="Run your first agent">
+    Start OpenCoder for a production feature or OpenAgent for general tasks and questions.
+
+    ```bash
+    opencode --agent OpenCoder
+    ```
+
+    Then describe what you want to build:
+
+    ```
+    > "Create a user authentication system with JWT and refresh tokens"
+    ```
+
+    ContextScout immediately discovers relevant patterns from your context files — your validation approach, your ORM, your error format, your component structure.
+  </Step>
+
+  <Step title="Approve the plan">
+    Before writing a single file, the agent presents a detailed implementation plan for your review. You approve or reject before any execution begins.
+
+    ```
+    ## Proposed implementation
+
+    Components:
+    - auth-guard.tsx (authentication wrapper)
+    - login-form.tsx (login UI component)
+
+    API endpoints:
+    - /api/auth/login (POST)
+    - /api/auth/refresh (POST)
+    - /api/auth/session (GET)
+
+    Database:
+    - users table (Drizzle schema)
+    - sessions table (Drizzle schema)
+
+    All code will follow YOUR patterns from context.
+
+    Approve? [y/n]
+    ```
+
+    Type `y` to proceed. The agent then implements incrementally — one component or endpoint at a time — with type checking and linting after each step.
+  </Step>
+
+  <Step title="What happens next">
+    After you approve, execution follows a structured sequence:
+
+    1. **Discover** (~1–2 min) — ContextScout loads your tech stack patterns, API conventions, component structure, and naming conventions
+    2. **Execute** (~10–15 min) — Incremental implementation using your patterns, validated after each file
+    3. **Validate** (~2–3 min) — TestEngineer writes tests, CodeReviewer checks for security issues
+    4. **Ship** — Production-ready code that matches your project, ready to commit
+
+    Total time for a complete feature with approval gates: roughly 15–25 minutes.
+
+    <Note>
+      Working with an external library for the first time? ExternalScout automatically fetches current documentation from official sources so agents use up-to-date API references, not outdated training data.
+    </Note>
+  </Step>
+</Steps>
+
+## Example workflow
+
+Here is a concrete example showing what a real agent exchange looks like, from request to approved plan:
+
+```text
+$ opencode --agent OpenCoder
+> "Add a Stripe webhook handler for subscription lifecycle events"
+
+[ContextScout] Loading patterns...
+  ✓ API pattern: Zod validation + Drizzle ORM
+  ✓ Error handling: custom ApiError class
+  ✓ Auth pattern: JWT middleware
+  ✓ External: fetching Stripe webhook docs via ExternalScout
+
+## Proposed implementation
+
+Files to create:
+- src/app/api/webhooks/stripe/route.ts
+- src/lib/stripe/webhook-handlers.ts
+- src/lib/stripe/subscription-sync.ts
+
+Database changes:
+- Add subscription_status column to users table (Drizzle migration)
+
+All code follows your Zod + Drizzle + custom error patterns.
+
+Approve? [y/n] y
+
+[Implementing 1/3] src/app/api/webhooks/stripe/route.ts...
+[Type check] ✓ Passed
+[Implementing 2/3] src/lib/stripe/webhook-handlers.ts...
+...
+```
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Installation guide" icon="download" href="/installation">
+    All install methods, profiles, global vs. local, and platform-specific notes
+  </Card>
+  <Card title="Context system" icon="layers" href="/concepts/context-system">
+    How ContextScout discovers and loads your patterns on every request
+  </Card>
+  <Card title="Agents overview" icon="robot" href="/agents/overview">
+    Choose the right agent for your task: OpenAgent, OpenCoder, or SystemBuilder
+  </Card>
+  <Card title="Team patterns" icon="users" href="/guides/team-patterns">
+    Share coding standards across your team using git-committed context files
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

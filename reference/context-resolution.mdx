@@ -1,0 +1,131 @@
+---
+title: "Context resolution: local-first discovery rules"
+description: "How ContextScout locates context files at startup, when global fallback applies, and how to debug missing context in your project."
+keywords: ["context resolution", "ContextScout", "local-first", "global fallback", "navigation.md", "context discovery"]
+---
+
+When you invoke an agent, ContextScout runs a resolution procedure to decide where to load context files from. The result of this single startup check determines the source for every context file requested during that session — making it fast and predictable.
+
+## The resolution algorithm
+
+<Steps>
+  <Step title="Check for local core">
+    ContextScout runs one glob check: does `.opencode/context/core/navigation.md` exist in the current project?
+
+    ```
+    glob("{local}/.opencode/context/core/navigation.md")
+    ```
+
+    If found → the project has a local installation. Use `.opencode/context/` for **everything**. Stop here.
+  </Step>
+  <Step title="Read paths.json for global path">
+    If the local core check returned nothing, ContextScout reads `paths.json` to find the configured global path. If `global` is `false` or absent, there is no fallback — proceed with local context only (which may be empty).
+  </Step>
+  <Step title="Check global core (one more glob)">
+    If a global path is configured, run a second check:
+
+    ```
+    glob("{global}/context/core/navigation.md")
+    ```
+
+    If found → use `{global}/context/core/` for **core files only** (standards, workflows, guides). All other context — especially `project-intelligence/` — stays local.
+  </Step>
+  <Step title="Set core_root for the session">
+    ContextScout sets `{core_root}` to whichever path has core context. This value is fixed for the entire session. No per-file fallback logic runs after this point.
+  </Step>
+</Steps>
+
+<Note>
+The entire resolution procedure uses **at most 2 glob checks**. One for local, one for global. This one-time check at startup keeps overhead minimal regardless of how many context files are loaded later.
+</Note>
+
+## Resolution rules at a glance
+
+| Rule | Behavior |
+|---|---|
+| Local always wins | If `.opencode/context/core/navigation.md` exists locally, global is never checked |
+| Global fallback is core-only | Global can only supply `core/` files — standards, workflows, guides |
+| Project intelligence is always local | `project-intelligence/` is never loaded from a global install |
+| One-time check | Resolution runs once at startup, not per file |
+| Maximum 2 glob checks | One for local core, one for global core |
+
+## The local-first rule explained
+
+If a project has a local `.opencode/` installation, ContextScout uses it exclusively. Global context is completely ignored for that session.
+
+This matters because a project's local install may have customized core standards. A team might ship a modified `core/standards/code-quality.md` that overrides the global defaults. The local-first rule ensures those project-specific customizations always take precedence.
+
+## Global fallback: when and what
+
+Global fallback activates only when two conditions are both true:
+1. The current project has **no** local `.opencode/context/core/` directory
+2. A global installation path is configured in `paths.json`
+
+When active, global fallback supplies only `core/` files. It never supplies `project-intelligence/`, `ui/`, `development/`, or any other project-specific category. Those categories are project-specific by design and must exist locally.
+
+<Info>
+A typical scenario for global fallback: you installed OAC globally with `bash install.sh` (without the `developer` profile) and haven't run the project-level setup. Core standards load from `~/.config/opencode/context/core/`, but there will be no project intelligence until you run `/add-context` in the project.
+</Info>
+
+## Project intelligence: always local only
+
+Project intelligence files (`project-intelligence/technical-domain.md`, `business-domain.md`, etc.) describe your specific project — tech stack, patterns, naming conventions. These files must live in the current project's `.opencode/context/project-intelligence/` directory.
+
+There is no global fallback for project intelligence. If the directory doesn't exist locally, ContextScout will not find project-specific patterns, and agents will fall back to generic code generation.
+
+## The navigation.md index file
+
+ContextScout navigates the context tree by reading `navigation.md` files top-down rather than scanning every file. Each `navigation.md` contains an ASCII directory tree and a quick-routes table that maps common tasks to specific file paths.
+
+```
+1. Read {core_root}/navigation.md           → learn what core/ contains
+2. Read {local}/project-intelligence/navigation.md → learn what project intelligence covers
+3. Follow routes in quick-routes tables to specific files
+4. Return ranked results: Critical → High → Medium
+```
+
+This navigation-driven approach means ContextScout never recommends a file it hasn't verified exists. It also means every new directory you create **must include a `navigation.md`** or ContextScout will not discover files inside it.
+
+## Common setup scenarios
+
+| Setup | Core files from | Project intelligence from |
+|---|---|---|
+| Local install (`bash install.sh developer`) | `.opencode/context/core/` | `.opencode/context/project-intelligence/` |
+| Global install + `/add-context` run in project | `~/.config/opencode/context/core/` | `.opencode/context/project-intelligence/` |
+| Both local and global installed | `.opencode/context/core/` (local wins) | `.opencode/context/project-intelligence/` |
+
+## When context is not found
+
+If ContextScout cannot find relevant files, it degrades gracefully: agents proceed with whatever context is available and generate code without project-specific pattern guidance.
+
+Common reasons context is not found:
+
+<AccordionGroup>
+  <Accordion title="Missing navigation.md in a subdirectory">
+    ContextScout follows `navigation.md` files. A directory without one is invisible to discovery. Create a `navigation.md` with an ASCII tree and quick-routes table to make files in that directory discoverable.
+  </Accordion>
+  <Accordion title="No local project-intelligence/ directory">
+    If you haven't run `/add-context`, the `project-intelligence/` directory may not exist. Agents will load core standards but have no knowledge of your tech stack or patterns. Run `/add-context` to create these files interactively.
+  </Accordion>
+  <Accordion title="Local core/ directory absent and no global configured">
+    If neither local core nor a global path is configured, ContextScout proceeds with no core context. Agents still function but won't apply universal code quality, security, or testing standards.
+  </Accordion>
+  <Accordion title="File path not confirmed before recommendation">
+    ContextScout verifies every file exists before recommending it. If a navigation.md references a file that doesn't exist on disk, that file will not appear in results. Verify file paths match actual files on disk.
+  </Accordion>
+</AccordionGroup>
+
+## Debugging context resolution
+
+To understand which files ContextScout is finding for a given request, invoke it directly:
+
+```bash
+opencode --agent ContextScout
+> "What context files are relevant for creating a React component?"
+```
+
+ContextScout returns a ranked list of files with a brief summary of what each contains. The file paths in the response show whether it resolved to local (`.opencode/context/...`) or global (`~/.config/opencode/context/...`).
+
+<Tip>
+If agents are writing generic code that doesn't match your patterns, check that `project-intelligence/technical-domain.md` exists locally and contains your actual coding patterns. Run `/add-context --update` to refresh it.
+</Tip>

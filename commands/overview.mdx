@@ -1,0 +1,78 @@
+---
+title: "Commands reference: OAC workflow commands"
+description: "A complete reference of all slash commands available in OpenAgents Control, run inside an OpenCode session to manage context, commits, testing, and more."
+keywords: ["commands", "slash commands", "OAC", "workflow", "opencode"]
+---
+
+OAC ships a set of slash commands that you run inside an active OpenCode session. Each command triggers a focused workflow — from teaching agents your coding patterns to creating conventional commits to analyzing your codebase for patterns. You do not need to install anything extra; the commands are part of the OAC configuration files under `.opencode/command/`.
+
+<Note>
+All commands are run inside an OpenCode session (e.g., `opencode --agent OpenCoder`), not from the terminal directly. Type the command as a prompt, such as `/add-context` or `/commit`.
+</Note>
+
+## All commands
+
+| Command | Description |
+|---|---|
+| `/add-context` | Interactive 6-question wizard that captures your tech stack, API patterns, naming conventions, code standards, and security requirements into context files that agents load automatically. |
+| `/add-context --update` | Re-runs the wizard to update existing context files as your project evolves — for example, when you add a library or migrate your ORM. |
+| `/commit` | Analyzes staged changes, determines the change type, generates a conventional commit message with an emoji prefix, shows it to you for approval, then runs `git commit` and `git push`. |
+| `/test` | Runs the complete testing pipeline: `pnpm type:check`, `pnpm lint`, and `pnpm test` in sequence, reporting failures and repeating until all checks pass. |
+| `/optimize` | Analyzes specified files or recently changed code for performance bottlenecks, security vulnerabilities, error-handling gaps, and maintainability issues, then produces a prioritized report. |
+| `/context` | Context system manager for harvesting AI session summaries into permanent context files, extracting knowledge from docs or URLs, organizing existing context, and validating file integrity. |
+| `/analyze-patterns` | Scans the codebase for recurring patterns such as error-handling, factory, or API-endpoint shapes, groups similar implementations, and suggests refactoring opportunities. |
+| `/build-context-system` | Interactive wizard that interviews you about your domain, use cases, and integrations, then generates a complete `.opencode/` folder with orchestrators, subagents, context files, workflows, and commands. |
+| `/validate-repo` | Comprehensive validation of the entire OAC repository: checks registry integrity, confirms all agent and context files exist, validates cross-references, and produces a detailed report. |
+| `/check-context-deps` | Validates that every agent properly declares its context file dependencies in frontmatter and in `registry.json`, identifies missing or broken references, and can auto-fix declarations with `--fix`. |
+| `/create-agent` | Creates a new OpenCode agent following research-backed Anthropic 2025 patterns: minimal system prompt (~500 tokens), just-in-time context loading, and clear tool definitions. |
+| `/create-tests` | Generates a comprehensive 8-test suite for any existing agent, covering planning, context loading, incremental implementation, tool usage, error handling, extended thinking, compaction, and completion. |
+
+## Detailed command pages
+
+<CardGroup cols={2}>
+  <Card title="add-context" icon="database" href="/commands/add-context">
+    Teach agents your coding patterns with a 6-question interactive wizard.
+  </Card>
+  <Card title="commit" icon="code-commit" href="/commands/commit">
+    Generate conventional commits with emoji prefixes and automatic staging.
+  </Card>
+  <Card title="test and optimize" icon="flask-conical" href="/commands/test-and-optimize">
+    Run tests, analyze code quality, validate the repository, and detect patterns.
+  </Card>
+  <Card title="Agents overview" icon="robot" href="/agents/overview">
+    Learn about the main agents that these commands work alongside.
+  </Card>
+</CardGroup>
+
+## `oac` CLI (npm package)
+
+In addition to slash commands, OAC ships an `oac` binary via the `@nextsystems/oac` npm package. This CLI manages component installation and your OAC setup from the terminal — outside of an OpenCode session.
+
+<Note>
+The `oac` CLI requires [Bun](https://bun.sh) to be installed. It is separate from the `install.sh` script and provides finer-grained component management.
+</Note>
+
+| Command | Description |
+|---|---|
+| `oac init` | Set up OAC agents and context files in the current project. Flags: `--yolo` (overwrite modified files), `--dry-run`, `--verbose`. |
+| `oac add <type>:<id>` | Add a single component by registry reference (e.g. `oac add context:react-patterns`). Flags: `--force`, `--dry-run`, `--yolo`, `--verbose`. |
+| `oac remove <type>:<id>` | Remove an installed component from disk and the manifest. |
+| `oac list` | Show all installed OAC components tracked in `.oac/manifest.json`. |
+| `oac status` | Show a one-screen summary of your OAC installation state. |
+| `oac update` | Update installed OAC files, skipping any you have modified locally. |
+| `oac apply [ide]` | Generate IDE config files from `.opencode/agent/` definitions. |
+| `oac doctor` | Check your OAC setup and report any issues with the installation. |
+
+```bash
+# Install via npm
+npm install -g @nextsystems/oac
+
+# Initialize in a project
+oac init
+
+# Add a specific component
+oac add context:react-patterns
+
+# Check installation health
+oac doctor
+```

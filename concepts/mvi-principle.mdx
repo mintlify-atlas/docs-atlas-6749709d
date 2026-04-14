@@ -1,0 +1,102 @@
+---
+title: "MVI: Minimal Viable Information for token efficiency"
+description: "MVI (Minimal Viable Information) means loading only relevant context per task. With lazy loading and file size limits, OAC cuts token usage by up to 80%."
+keywords: ["MVI", "minimal viable information", "token efficiency", "context loading", "ContextScout", "lazy loading", "cost savings"]
+---
+
+Minimal Viable Information (MVI) is the principle that governs how OAC designs and loads context files. The goal is simple: give agents exactly what they need to do their job, and nothing more. This keeps token usage low, responses fast, and code quality high.
+
+## The problem with traditional AI tools
+
+Traditional AI coding tools load as much context as possible — often the entire codebase or a large sliding window of files. More context feels safer, but it creates real problems:
+
+- **High token usage per request** — loading the entire codebase means paying for tokens that contribute nothing to the current task
+- **Slower responses** — larger context windows take longer to process
+- **Lower quality output** — burying the relevant patterns in thousands of lines of noise makes it harder for the model to focus on what matters
+
+The result is expensive, slow, and not noticeably better than a smaller, well-targeted context.
+
+## The OAC approach: load only what's relevant
+
+OAC uses three mechanisms to keep token usage minimal:
+
+<CardGroup cols={3}>
+  <Card title="Lazy loading" icon="clock">
+    Context files are not loaded at startup. ContextScout discovers them on-demand, per request, based on what the agent actually needs.
+  </Card>
+  <Card title="Relevant-only discovery" icon="magnifying-glass">
+    ContextScout reads navigation files to identify which context files match the current task. Unrelated files are never loaded.
+  </Card>
+  <Card title="Small file design" icon="file-lines">
+    Every context file is designed to stay under 200 lines. The navigation layer makes it fast to find the right file without reading everything.
+  </Card>
+</CardGroup>
+
+## The numbers
+
+The efficiency gains are significant. OAC's MVI approach reduces context tokens by approximately 80% compared to loading the full codebase:
+
+| Approach | Tokens per request |
+|---|---|
+| Full codebase context (traditional) | ~8,000 tokens |
+| MVI with relevant-only loading (OAC) | ~750 tokens |
+
+That is an 80% reduction. At scale — across a team running dozens of agent requests per day — this translates directly to lower API costs and faster turnaround.
+
+## Context file size rules
+
+Every file in the context system is designed to a specific size target:
+
+| File type | Target size |
+|---|---|
+| Concept files | under 100 lines |
+| Guide files | under 150 lines |
+| Example files | under 80 lines |
+| Any context file | under 200 lines |
+
+Files are kept short not because information is removed, but because only the *essential* information is included. A context file contains the core concept (1–3 sentences), the key rules (3–5 bullets), a minimal representative example, and a reference link to full documentation. Verbose explanations, complete API docs, and historical context are not included.
+
+<Note>
+  The goal of a context file is to be scannable in under 30 seconds. If it takes longer than that, it is too long.
+</Note>
+
+## How ContextScout discovers only what's needed
+
+ContextScout is a read-only subagent that runs at the start of every request. Its job is to return a short, ranked list of context files — not everything that might be relevant, but only what the agent needs for this specific task.
+
+<Steps>
+  <Step title="Resolve the context root">
+    ContextScout checks whether a local `core/` directory exists. If yes, all context is loaded locally. If not, it checks the global fallback path. This check runs once, at startup.
+  </Step>
+  <Step title="Understand the request intent">
+    ContextScout reads the user's request and identifies the domain: is this a frontend component? A backend API? A database schema? A security-sensitive endpoint?
+  </Step>
+  <Step title="Follow navigation files">
+    Rather than scanning all files, ContextScout reads `navigation.md` files at each level of the context directory. Navigation files are ~200–300 tokens each and contain quick-route tables that point directly to relevant files.
+  </Step>
+  <Step title="Return ranked results">
+    ContextScout returns files ranked as Critical, High, or Medium priority — with a brief summary of what each file contains. The calling agent loads them in priority order.
+  </Step>
+</Steps>
+
+The key constraint: ContextScout never recommends a file it has not confirmed exists, and it never returns everything. It matches files to intent.
+
+## Real benefits
+
+The MVI principle delivers three measurable improvements:
+
+<CardGroup cols={3}>
+  <Card title="Cost savings" icon="circle-dollar-to-slot">
+    80% fewer tokens per request means 80% lower API costs for the same amount of work. This compounds quickly across a team.
+  </Card>
+  <Card title="Faster responses" icon="bolt">
+    Smaller context windows process faster. Agents return proposals and implementations more quickly than they would with full-codebase context.
+  </Card>
+  <Card title="Higher quality output" icon="star">
+    When the agent has 750 tokens of precisely relevant patterns instead of 8,000 tokens of mixed content, it applies those patterns more accurately.
+  </Card>
+</CardGroup>
+
+<Tip>
+  80% of tasks in OAC use "isolation context" — only the patterns directly relevant to the current request. The remaining 20% (complex multi-domain features) load slightly more context, but still far less than a full-codebase approach.
+</Tip>

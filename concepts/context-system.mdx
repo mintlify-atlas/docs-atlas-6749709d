@@ -1,0 +1,164 @@
+---
+title: "The context system: teach agents your patterns"
+description: "Context files store your coding standards as markdown. ContextScout loads relevant files before each task so agents generate code matching your patterns."
+keywords: ["context", "patterns", "ContextScout", "project-intelligence", "add-context", "coding standards"]
+---
+
+Context is the mechanism that separates OAC from generic AI coding tools. Instead of generating code from training data alone, OAC agents read your project's coding standards — stored as markdown files — before they write a single line. The result is code that matches your architecture, naming conventions, validation patterns, and security requirements without manual correction.
+
+## What context is
+
+A context file is a markdown document that describes how your project works. It might define your API endpoint structure, your component conventions, your database query patterns, or your security requirements. Think of it as a style guide written specifically for AI agents.
+
+Context files live in `.opencode/context/` in your project directory. Once they exist, ContextScout discovers them automatically every time an agent receives a request.
+
+## How context flows through a request
+
+```
+Your request
+    ↓
+ContextScout discovers relevant context files
+    ↓
+Agent loads the discovered files (ranked Critical → High → Medium)
+    ↓
+Agent generates code using your patterns
+    ↓
+Code matches your project standards automatically
+```
+
+**Example:** You ask the agent to create a React component. ContextScout finds your `project-intelligence/technical-domain.md` file, which contains your TypeScript component pattern. The agent loads that file and produces a component matching your conventions — named exports, `React.FC` typing, JSDoc comments — without you having to ask for any of it.
+
+## Context directory structure
+
+Context is organized into two main areas: `core/` for universal development standards, and `project-intelligence/` for your team's specific patterns.
+
+```
+.opencode/context/
+├── core/                             # Universal standards (shared across projects)
+│   ├── standards/
+│   │   ├── code-quality.md           # Modular, functional patterns
+│   │   ├── security-patterns.md      # Security best practices
+│   │   ├── test-coverage.md          # Testing standards
+│   │   └── documentation.md          # Documentation patterns
+│   └── workflows/
+│       ├── design-iteration.md       # 4-stage UI design workflow
+│       ├── task-delegation.md        # Task delegation patterns
+│       ├── external-libraries.md     # Library integration
+│       └── code-review.md            # Code review process
+│
+├── ui/                               # Design and UX standards
+│   └── web/
+│       ├── ui-styling-standards.md   # Tailwind + Flowbite
+│       ├── react-patterns.md         # React conventions
+│       └── design-systems.md         # Design system principles
+│
+└── project-intelligence/             # YOUR patterns (project-specific)
+    ├── technical-domain.md           # Tech stack and code patterns
+    ├── business-domain.md            # Business context
+    └── navigation.md                 # Quick overview
+```
+
+`core/` files contain universal patterns that apply to any project. `project-intelligence/` files contain your team's specific conventions — these are the files agents rely on most heavily when generating code.
+
+## What context files contain
+
+A well-structured context file defines concrete patterns with real code examples. The file for your project might include:
+
+<AccordionGroup>
+  <Accordion title="Tech stack and dependencies">
+    List which frameworks, libraries, and ORMs you use. For example: Next.js 14, TypeScript strict mode, Drizzle ORM, Zod for validation, Tailwind CSS.
+  </Accordion>
+  <Accordion title="Code patterns with examples">
+    Show a representative API endpoint, a component template, or a database query from your actual codebase. Agents replicate the structure, error handling, and response format from these examples.
+  </Accordion>
+  <Accordion title="Naming conventions">
+    Define file naming (`kebab-case`), component naming (`PascalCase`), function naming (`camelCase verbs`), and constant naming (`UPPER_CASE`). Consistency here eliminates style debates.
+  </Accordion>
+  <Accordion title="Security requirements">
+    Specify that all endpoints must validate authentication, check permissions, sanitize inputs, and use parameterized queries. Agents treat these as non-negotiable constraints.
+  </Accordion>
+</AccordionGroup>
+
+## Adding your patterns with `/add-context`
+
+The fastest way to create project context is the interactive wizard:
+
+```bash
+/add-context
+```
+
+The wizard asks 6 questions (takes 10–15 minutes):
+
+<Steps>
+  <Step title="Tech stack">
+    What frameworks and libraries does your project use? Example: `Next.js + TypeScript + PostgreSQL + Tailwind`
+  </Step>
+  <Step title="API endpoint example">
+    Paste a representative API endpoint from your codebase.
+  </Step>
+  <Step title="Component example">
+    Paste a representative UI component from your codebase.
+  </Step>
+  <Step title="Naming conventions">
+    Describe your naming rules: file names, component names, function names.
+  </Step>
+  <Step title="Code standards">
+    List any enforced standards: TypeScript strict mode, Zod validation, ESLint rules.
+  </Step>
+  <Step title="Security requirements">
+    Describe your security constraints: authentication checks, input validation, query parameterization.
+  </Step>
+</Steps>
+
+The wizard generates a `project-intelligence/technical-domain.md` file from your answers. After that, agents automatically use your patterns on every request.
+
+<Tip>
+  Run `/add-context --update` whenever your patterns change — new library, new API format, or updated security requirements. Agents use the updated patterns immediately.
+</Tip>
+
+## Context resolution: local-first, global fallback
+
+ContextScout uses a local-first resolution strategy. When it starts, it checks whether a local `core/` directory exists in your project. If it does, it uses local files exclusively. If not, it falls back to global files installed at `~/.config/opencode/context/`.
+
+```
+1. Check local: .opencode/context/core/navigation.md
+   ↓ Found? → Use local for everything. Done.
+   ↓ Not found?
+2. Check global: ~/.config/opencode/context/core/navigation.md
+   ↓ Found? → Use global for core/ files only.
+   ↓ Not found? → Proceed without core context.
+```
+
+**Key rules:**
+- Local always wins — if you have a local install, global is never checked
+- Global fallback applies only to `core/` (universal standards), never to `project-intelligence/`
+- `project-intelligence/` is always local — your team's patterns live in your project, not globally
+
+| Setup | Core files from | Project intelligence from |
+|---|---|---|
+| Local install | `.opencode/context/core/` | `.opencode/context/project-intelligence/` |
+| Global install + `/add-context` | `~/.config/opencode/context/core/` | `.opencode/context/project-intelligence/` |
+| Both local and global | `.opencode/context/core/` (local wins) | `.opencode/context/project-intelligence/` |
+
+## Sharing context with your team
+
+Context files are committed to your repository. Once your team lead runs `/add-context` and commits the result, every team member automatically inherits the same patterns.
+
+```bash
+# Team lead adds patterns once
+/add-context
+
+# Commit to repo
+git add .opencode/context/
+git commit -m "Add team coding standards"
+git push
+
+# All team members now use the same patterns automatically
+# New developers inherit standards on day 1
+```
+
+This means code style debates become unnecessary — the agent enforces your patterns on every generation, for every developer on the team.
+
+<Note>
+  Different projects can have different patterns. Context in `.opencode/context/project-intelligence/` is scoped to the project it lives in. Global context provides sensible defaults; local context overrides them.
+</Note>

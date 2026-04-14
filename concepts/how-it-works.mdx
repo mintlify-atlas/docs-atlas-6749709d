@@ -1,0 +1,116 @@
+---
+title: "How OpenAgents Control works"
+description: "A walkthrough of the 6-stage workflow that takes your request from pattern discovery through to production-ready code — with you approving every step."
+keywords: ["workflow", "stages", "discover", "propose", "approve", "execute", "validate", "ship"]
+---
+
+OpenAgents Control follows a structured 6-stage workflow designed around one core idea: load your coding patterns *before* generating code, not after. Most AI tools produce generic output and leave you to refactor. OAC reverses that by front-loading context discovery, so every line of code written by the agent already matches your project's architecture, naming conventions, and standards.
+
+## The 6-stage workflow
+
+<Steps>
+  <Step title="Discover">
+    Before writing a single line of code, ContextScout scans your `.opencode/context/` directory and identifies the files most relevant to your request. It returns a ranked list — Critical, High, Medium — so the agent loads only what matters. If you have a tech stack file defining your Zod validation and Drizzle ORM patterns, that file is loaded here, not after the fact.
+
+    **What you do:** Nothing. This runs automatically in the background.
+  </Step>
+  <Step title="Propose">
+    With your patterns loaded, the agent drafts a detailed implementation plan: which components to create, which API endpoints to add, which database schemas to define. This plan is shown to you before any files are touched.
+
+    **Example plan output:**
+
+    ```text
+    ## Proposed Implementation
+
+    Components:
+    - user-dashboard.tsx (main page)
+    - profile-settings.tsx (settings component)
+    - auth-guard.tsx (authentication wrapper)
+
+    API Endpoints:
+    - /api/user/profile (GET, POST)
+    - /api/auth/session (GET)
+
+    Database:
+    - users table (Drizzle schema)
+    - sessions table (Drizzle schema)
+
+    All code will follow YOUR patterns from context.
+
+    Approve? [y/n]
+    ```
+
+    **What you do:** Read the plan. Approve, reject, or ask for changes before any execution begins.
+  </Step>
+  <Step title="Approve">
+    Approval is always required. The agent cannot proceed to implementation until you explicitly approve the proposed plan. This is a hard gate — not an optional confirmation dialog. You can modify the plan, reject it entirely, or approve it as-is.
+
+    **What you do:** Type `y` to approve, `n` to reject, or describe changes you want.
+  </Step>
+  <Step title="Execute">
+    After approval, the agent implements the plan incrementally — one component at a time, validating after each step with type checks and linting. Every file it creates uses the patterns loaded in the Discover stage.
+
+    This is typically the longest stage (~10–15 minutes for a complete feature) because the agent is generating production-quality code, not placeholder output.
+
+    **What you do:** Monitor progress. The agent validates each step and surfaces issues immediately.
+  </Step>
+  <Step title="Validate">
+    Once implementation is complete, specialized subagents take over:
+    - **TestEngineer** writes and runs tests
+    - **CodeReviewer** checks for security issues and code quality
+    - **BuildAgent** confirms type checking and build success
+
+    **What you do:** Review the validation report. Address any flagged issues.
+  </Step>
+  <Step title="Ship">
+    The agent delivers production-ready code that matches your project's patterns from the first file. No refactoring needed. You can commit and deploy immediately.
+
+    **What you do:** Commit the code. Run `/commit` for a conventional-format commit message.
+  </Step>
+</Steps>
+
+## The key innovation: patterns loaded before code generation
+
+The critical difference between OAC and generic AI coding tools is *when* patterns are applied.
+
+<CodeGroup>
+
+```typescript Generic AI output (no context)
+// What generic AI gives you
+export async function POST(request: Request) {
+  const data = await request.json();
+  return Response.json({ success: true });
+}
+```
+
+```typescript OAC output (patterns loaded first)
+// What OAC generates using YOUR patterns
+export async function POST(request: Request) {
+  const body = await request.json();
+  const validated = UserSchema.parse(body);  // Your Zod validation
+  const result = await db.users.create(validated);  // Your Drizzle ORM
+  return Response.json(result, { status: 201 });  // Your response format
+}
+```
+
+</CodeGroup>
+
+The generic version requires you to add validation, replace the ORM call, and fix the response format. The OAC version reflects your stack from the start because ContextScout loaded your patterns before the first line was written.
+
+<Note>
+  The full workflow takes 15–25 minutes for a complete feature. That time is spent generating quality code, not producing output you need to rewrite.
+</Note>
+
+## Learn more
+
+<CardGroup cols={3}>
+  <Card title="Context system" icon="folder-open" href="/concepts/context-system">
+    How context files work and how to add your own patterns.
+  </Card>
+  <Card title="Approval gates" icon="shield-check" href="/concepts/approval-gates">
+    What gets gated, how to review plans, and what happens when you reject one.
+  </Card>
+  <Card title="Agents overview" icon="robot" href="/agents/overview">
+    Which agent to use for which task.
+  </Card>
+</CardGroup>

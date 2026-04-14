@@ -1,122 +1,108 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "OpenAgents Control",
+  "theme": "palm",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#848c8e",
+    "light": "#11161e",
+    "dark": "#cfd0d2"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "https://media.brand.dev/2b01fe20-c04b-4a1d-a2f9-1d2789c50a7a.jpg",
+  "logo": {
+    "light": "https://media.brand.dev/5ffd6ce4-2434-4b4b-920a-f8cacac8b48b.svg",
+    "dark": "https://media.brand.dev/5ffd6ce4-2434-4b4b-920a-f8cacac8b48b.svg"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/darrenhinde/OpenAgentsControl"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/darrenhinde/OpenAgentsControl"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "concepts/how-it-works",
+              "concepts/context-system",
+              "concepts/approval-gates",
+              "concepts/mvi-principle"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Agents",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "agents/overview",
+              "agents/openagent",
+              "agents/opencoder",
+              "agents/system-builder",
+              "agents/subagents"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Commands & Workflows",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "commands/overview",
+              "commands/add-context",
+              "commands/commit",
+              "commands/test-and-optimize"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/team-patterns",
+              "guides/model-configuration",
+              "guides/customizing-agents",
+              "guides/claude-code-plugin"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Context System",
             "pages": [
-              "api-reference/introduction"
+              "reference/context-files",
+              "reference/context-resolution",
+              "reference/project-intelligence"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Configuration & Registry",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "reference/registry",
+              "reference/installation-profiles",
+              "reference/environment-variables"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "reference/external-libraries",
+              "reference/multi-language-support"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

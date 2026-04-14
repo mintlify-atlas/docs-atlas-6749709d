@@ -1,0 +1,185 @@
+---
+title: "Configuring AI models for OAC agents"
+description: "OAC agents use OpenCode's default model unless you override it per agent. Learn when to configure models and how to edit agent frontmatter."
+keywords: ["model configuration", "AI models", "Claude", "GPT", "Gemini", "agent frontmatter", "per-agent models"]
+---
+
+By default, every OAC agent—OpenAgent, OpenCoder, ContextScout, TaskManager, and all the rest—uses whatever model you have configured as the default in OpenCode. You do not need to touch any configuration file to get started. Model configuration becomes useful when you want different agents to use different models, usually to balance cost against capability for each type of task.
+
+## Default behavior
+
+When you install OAC and run `opencode --agent OpenCoder`, the agent uses your OpenCode default model. There is no per-agent model set out of the box. This is intentional: most teams get consistent results from a single model, and managing per-agent model settings adds complexity.
+
+## When to configure per-agent models
+
+There are three main reasons to configure a model for a specific agent:
+
+<CardGroup cols={3}>
+  <Card title="Cost optimization" icon="coins">
+    Lightweight agents like ContextScout do narrow, fast tasks. Using a cheaper model (Haiku, Flash) for these saves money with no quality loss.
+  </Card>
+  <Card title="Quality requirements" icon="star">
+    Complex planning and orchestration agents benefit from the most capable model available. Spending more on OpenCoder pays off in fewer revision cycles.
+  </Card>
+  <Card title="Testing different models" icon="flask">
+    You may want to evaluate how different models handle your specific patterns and project structure before committing to one.
+  </Card>
+</CardGroup>
+
+## How to edit agent files
+
+Agent behavior—including the model—is defined in markdown files with YAML frontmatter. Edit these files directly with any text editor.
+
+<Tabs>
+  <Tab title="Local installation">
+    Local installation stores agent files in your project's `.opencode/` directory:
+
+    ```bash
+    nano .opencode/agent/core/opencoder.md
+    ```
+  </Tab>
+  <Tab title="Global installation">
+    Global installation stores agent files in your home configuration directory:
+
+    ```bash
+    nano ~/.config/opencode/agent/core/opencoder.md
+    ```
+  </Tab>
+</Tabs>
+
+## The YAML frontmatter model field
+
+The frontmatter at the top of each agent file controls the agent's identity, mode, temperature, and permissions. Here is the actual frontmatter from `opencoder.md`:
+
+```yaml
+---
+name: OpenCoder
+description: "Orchestration agent for complex coding, architecture, and multi-file refactoring"
+mode: primary
+temperature: 0.1
+permission:
+  bash:
+    "rm -rf *": "ask"
+    "sudo *": "deny"
+    "chmod *": "ask"
+    "curl *": "ask"
+    "wget *": "ask"
+    "docker *": "ask"
+    "kubectl *": "ask"
+  edit:
+    "**/*.env*": "deny"
+    "**/*.key": "deny"
+    "**/*.secret": "deny"
+    "node_modules/**": "deny"
+    "**/__pycache__/**": "deny"
+    "**/*.pyc": "deny"
+    ".git/**": "deny"
+---
+```
+
+To set a specific model, add the `model` field to this frontmatter:
+
+```yaml
+---
+name: OpenCoder
+description: "Orchestration agent for complex coding, architecture, and multi-file refactoring"
+mode: primary
+model: anthropic/claude-sonnet-4-5
+temperature: 0.1
+permission:
+  bash:
+    "rm -rf *": "ask"
+    "sudo *": "deny"
+  edit:
+    "**/*.env*": "deny"
+    "**/*.key": "deny"
+---
+```
+
+The `model` field takes a provider-prefixed model ID such as `anthropic/claude-sonnet-4-5`, `openai/gpt-4o`, or `google/gemini-2.0-flash`.
+
+## Finding available models
+
+<CardGroup cols={2}>
+  <Card title="models.dev" icon="globe" href="https://models.dev/?search=open">
+    Browse and compare available models from all providers, with context windows, pricing, and capability information.
+  </Card>
+  <Card title="opencode models command" icon="terminal">
+    List models available to your current OpenCode configuration:
+
+    ```bash
+    opencode models
+    ```
+  </Card>
+</CardGroup>
+
+## Recommended model configurations
+
+These configurations reflect the task characteristics of each agent type. Actual model availability depends on your provider setup.
+
+<AccordionGroup>
+  <Accordion title="Fast and inexpensive agents">
+    Agents that do narrow, well-defined tasks with small context windows:
+
+    ```yaml
+    # Good for: ContextScout, ExternalScout
+    model: anthropic/claude-haiku-3-5
+    # or
+    model: google/gemini-2.0-flash
+    ```
+
+    These agents primarily read files and return paths or summaries. They do not need strong reasoning capability—speed and low cost matter more.
+  </Accordion>
+
+  <Accordion title="Balanced agents">
+    Agents that implement code, write tests, or perform code review:
+
+    ```yaml
+    # Good for: CoderAgent, TestEngineer, CodeReviewer
+    model: anthropic/claude-sonnet-4-5
+    # or
+    model: openai/gpt-4o-mini
+    ```
+
+    These agents need solid code generation and reasoning, but are called frequently enough that Opus-tier pricing adds up quickly.
+  </Accordion>
+
+  <Accordion title="High-capability orchestration">
+    Agents that plan multi-file features, manage sessions, and coordinate subagents:
+
+    ```yaml
+    # Good for: OpenCoder, OpenAgent, TaskManager
+    model: anthropic/claude-opus-4-5
+    # or
+    model: openai/gpt-4o
+    ```
+
+    Orchestration agents make decisions that affect the entire workflow. Using a more capable model here reduces replanning and failed proposals.
+  </Accordion>
+
+  <Accordion title="Local models">
+    OAC is model-agnostic. If OpenCode is configured with a local model provider (Ollama, LM Studio), you can reference those models the same way:
+
+    ```yaml
+    model: ollama/llama3.2
+    # or whatever your local provider exposes
+    ```
+
+    Local models have no per-token cost but typically require larger hardware and may produce less consistent results on complex orchestration tasks.
+  </Accordion>
+</AccordionGroup>
+
+## Model categories
+
+OAC works with any model supported by OpenCode. The main categories:
+
+| Provider | Example models | Best for |
+|----------|----------------|----------|
+| Anthropic (Claude) | claude-haiku-3-5, claude-sonnet-4-5, claude-opus-4-5 | Full-stack development, nuanced instructions |
+| OpenAI (GPT) | gpt-4o-mini, gpt-4o, o3-mini | Code generation, function calling |
+| Google (Gemini) | gemini-2.0-flash, gemini-1.5-pro | Long context, multimodal tasks |
+| Local (Ollama, etc.) | llama3.2, qwen2.5-coder | Offline use, zero token cost |
+
+<Warning>
+After editing an agent file, the change takes effect the next time you start a session with that agent. There is no hot-reload for frontmatter changes.
+</Warning>

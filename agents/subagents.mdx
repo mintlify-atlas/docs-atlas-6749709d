@@ -1,0 +1,168 @@
+---
+title: "Specialized subagents: auto-delegated experts"
+description: "Subagents are specialists auto-invoked by OpenAgent and OpenCoder. They handle pattern discovery, coding, testing, review, documentation, and live doc fetching."
+---
+
+Subagents are the specialist workers that run beneath OpenAgent and OpenCoder. They are never invoked directly by users — the main agents delegate to them automatically when the work calls for it. Each subagent has a narrow, well-defined responsibility, which keeps them fast, predictable, and easy to audit. Together they form a complete pipeline from pattern discovery through code generation, testing, review, and documentation.
+
+<Note>
+You do not invoke subagents with `opencode --agent SubagentName`. They are triggered internally by OpenAgent and OpenCoder based on the task at hand.
+</Note>
+
+## Core subagents
+
+<AccordionGroup>
+  <Accordion title="ContextScout — smart pattern discovery">
+    **Purpose**: Discover and return relevant context files from `.opencode/context/` before any task runs.
+
+    **When triggered**: Automatically at the start of every task — before OpenAgent or OpenCoder creates a plan. Exempt from the approval gate rule so it can run without interrupting the workflow.
+
+    **What it does**:
+    - Reads `navigation.md` files to map the context directory dynamically (no hardcoded paths)
+    - Resolves whether to use local context (`.opencode/context/`) or fall back to global (`~/.config/opencode/context/`) for core files
+    - Returns context files ranked by priority: Critical → High → Medium
+    - Recommends ExternalScout when a mentioned library has no internal context coverage
+
+    **Permissions**: Read-only. Cannot write, edit, run bash, or delegate tasks.
+
+    **Why it matters**: Without ContextScout loading your coding standards first, agents generate generic code that doesn't match your project patterns. ContextScout is the mechanism that makes OAC context-aware.
+  </Accordion>
+
+  <Accordion title="TaskManager — atomic task breakdown">
+    **Purpose**: Transform a complex feature request into a set of atomic, verifiable JSON subtasks with explicit dependency tracking.
+
+    **When triggered**: By OpenCoder when a feature spans 4+ files or is estimated to take more than 60 minutes. Also triggered by OpenAgent when explicit task planning is requested.
+
+    **What it does**:
+    - Loads task management standards and checks current task state before planning
+    - Analyzes the feature to identify natural task boundaries, technical risks, and which tasks can run in parallel
+    - Creates `task.json` (feature-level metadata) and `subtask_NN.json` files under `.tmp/tasks/{feature}/`
+    - Marks tasks with `parallel: true` when they have no inter-dependencies, enabling simultaneous execution
+    - Separates `context_files` (coding standards to follow) from `reference_files` (project source files to read) — these are never mixed
+
+    **Output location**: `.tmp/tasks/{feature-slug}/`
+
+    **Example subtask**:
+    ```json
+    {
+      "id": "user-auth-02",
+      "seq": "02",
+      "title": "Implement JWT service with token generation and validation",
+      "status": "pending",
+      "depends_on": ["01"],
+      "parallel": false,
+      "suggested_agent": "CoderAgent",
+      "context_files": [".opencode/context/core/standards/code-quality.md"],
+      "reference_files": ["src/config/jwt.config.ts"],
+      "acceptance_criteria": ["JWT tokens signed with RS256", "Access tokens expire in 15 minutes"],
+      "deliverables": ["src/auth/jwt.service.ts"]
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="CoderAgent — focused code implementations">
+    **Purpose**: Execute individual coding subtasks defined by TaskManager.
+
+    **When triggered**: By OpenCoder when executing subtasks from a TaskManager breakdown. Multiple CoderAgent instances can run simultaneously for tasks marked `parallel: true`.
+
+    **What it does**:
+    - Reads the assigned subtask JSON to understand its scope, context files, and acceptance criteria
+    - Loads the specified coding standards before writing any code
+    - Implements the code and marks the subtask as `completed` when acceptance criteria are met
+    - Reports failures without auto-fixing
+
+    **Key design**: CoderAgent is stateless by design. All context it needs is provided by the calling agent via the subtask JSON file. No re-discovery happens at the subtask level.
+  </Accordion>
+
+  <Accordion title="TestEngineer — test authoring and TDD">
+    **Purpose**: Write comprehensive test suites for implemented code.
+
+    **When triggered**: By OpenCoder during the completion phase when tests are needed. Can also be triggered directly by OpenAgent for standalone testing requests.
+
+    **What it does**:
+    - Reads the test coverage standards from context
+    - Writes unit, integration, and end-to-end tests as appropriate
+    - Follows Arrange-Act-Assert patterns
+    - Mocks external dependencies correctly
+    - Ensures coverage of both positive and negative test cases
+
+    **Registry ID**: `tester`
+  </Accordion>
+
+  <Accordion title="CodeReviewer — code review and security analysis">
+    **Purpose**: Perform thorough code review with a focus on security, quality, and maintainability.
+
+    **When triggered**: By OpenCoder during the completion phase when a security or quality review is requested. Can also be triggered by OpenAgent for standalone review tasks.
+
+    **What it does**:
+    - Reviews code against project quality standards
+    - Identifies security vulnerabilities, performance issues, and maintainability problems
+    - Returns a structured review report with specific recommendations
+    - Does not auto-fix — reports findings only
+
+    **Registry ID**: `reviewer`
+  </Accordion>
+
+  <Accordion title="BuildAgent — type checking and build validation">
+    **Purpose**: Run type checks and validate that the project builds successfully.
+
+    **When triggered**: By OpenCoder after implementation steps, or by OpenAgent when build validation is explicitly requested.
+
+    **What it does**:
+    - Runs the appropriate type checker for the project language (`tsc`, `mypy`, `cargo check`, `go build`, Roslyn)
+    - Reports build errors and type failures clearly
+    - Does not attempt to fix errors — returns a status report
+
+    **Registry ID**: `build-agent`
+  </Accordion>
+
+  <Accordion title="DocWriter — documentation generation">
+    **Purpose**: Generate and update documentation for code, APIs, and features.
+
+    **When triggered**: By OpenCoder during the completion phase when documentation is needed. Can also be triggered by OpenAgent for documentation-focused tasks.
+
+    **What it does**:
+    - Reads documentation standards from context before writing
+    - Generates consistent, well-structured documentation
+    - Updates version and date stamps
+    - Avoids duplication with existing documentation
+
+    **Registry ID**: `documentation`
+  </Accordion>
+
+  <Accordion title="ExternalScout — live documentation for external libraries">
+    **Purpose**: Fetch current, version-specific documentation for external libraries and frameworks from live sources — not from the model's training data.
+
+    **When triggered**: Automatically when OpenAgent or OpenCoder detects that the task involves an external library (npm packages, pip packages, frameworks, APIs). Also triggered when build errors reference external packages.
+
+    **What it does**:
+    1. Checks `.tmp/external-context/` for cached docs less than 7 days old
+    2. If not cached, looks up the library in a built-in registry to get its Context7 library ID and official docs URL
+    3. Fetches live documentation from the Context7 API with a context-aware query (including tech stack context and common pitfalls)
+    4. Falls back to fetching directly from official documentation sites via webfetch if Context7 fails
+    5. Filters results to only relevant sections
+    6. Writes files to `.tmp/external-context/{package-name}/{topic}.md`
+    7. Returns file locations and a brief summary
+
+    **Supported libraries** (18+): Drizzle, Prisma, Better Auth, NextAuth.js, Clerk, Next.js, React, TanStack Query, TanStack Router, Cloudflare Workers, AWS Lambda, Vercel, Shadcn/ui, Radix UI, Tailwind CSS, Zustand, Jotai, Zod, React Hook Form, Vitest, Playwright
+
+    **Why this matters**: Training data is outdated for fast-moving libraries. Next.js 13 uses a `pages/` directory; Next.js 15 uses `app/`. Using training data for library APIs produces broken code. ExternalScout ensures agents always work from current documentation.
+
+    <Tip>
+    ExternalScout caches fetched documentation for 7 days. If you need to force a refresh (for example, after a major library release), delete the relevant directory under `.tmp/external-context/`.
+    </Tip>
+  </Accordion>
+</AccordionGroup>
+
+## Subagent summary
+
+| Subagent | Invoked by | Primary role |
+|---|---|---|
+| **ContextScout** | OpenAgent, OpenCoder (every task) | Discover internal context files |
+| **TaskManager** | OpenCoder, OpenAgent | Break features into atomic subtasks |
+| **CoderAgent** | OpenCoder | Execute individual coding subtasks |
+| **TestEngineer** | OpenCoder, OpenAgent | Write tests and validate coverage |
+| **CodeReviewer** | OpenCoder, OpenAgent | Review code for security and quality |
+| **BuildAgent** | OpenCoder, OpenAgent | Run type checks and build validation |
+| **DocWriter** | OpenCoder, OpenAgent | Generate and update documentation |
+| **ExternalScout** | OpenAgent, OpenCoder | Fetch live docs for external libraries |

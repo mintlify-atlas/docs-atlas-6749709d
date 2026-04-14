@@ -1,0 +1,180 @@
+---
+title: "OpenAgent: universal coordinator for all tasks"
+description: "OpenAgent handles questions, docs, and simple tasks. It proposes a plan before executing anything and delegates to specialist agents when needed."
+---
+
+OpenAgent is the primary entry point for most work in OpenAgents Control. It serves as a universal coordinator that handles questions, executes general tasks directly, and delegates to specialist agents only when the task genuinely requires it. Unlike a narrow coding agent, OpenAgent adapts to whatever you throw at it — answering technical questions, creating documentation, running bash operations, coordinating multi-step workflows, and more. For deep development work spanning many files, it hands off to OpenCoder.
+
+## Invoking OpenAgent
+
+```bash
+opencode --agent OpenAgent
+```
+
+## The two paths
+
+OpenAgent routes every interaction into one of two paths based on whether your input requires execution or not.
+
+### Path 1: Conversational (for questions)
+
+When you ask an informational question, OpenAgent answers immediately — no approval required, no plan to review.
+
+```
+> "What's the difference between REST and GraphQL?"
+> "How do I use async/await in JavaScript?"
+> "Explain what this code does"
+```
+
+### Path 2: Task execution (for actions)
+
+When you request something that requires writing, editing, or running commands, OpenAgent creates a plan first and waits for your approval before touching anything.
+
+```
+> "Create a README for this project"
+> "Build a user authentication system"
+> "Refactor this code to use TypeScript"
+```
+
+<Warning>
+OpenAgent **always** requests approval before any bash execution, file write, file edit, or subagent delegation. This rule is absolute and cannot be bypassed. Read and list operations (glob, grep, read) do not require approval.
+</Warning>
+
+## The 6-stage workflow
+
+When you request a task, OpenAgent follows a systematic six-stage workflow.
+
+<Steps>
+  <Step title="Analyze">
+    OpenAgent reads your request and classifies it as a question or a task. Questions go directly to an answer. Tasks proceed to Stage 2. This happens instantly and invisibly.
+  </Step>
+  <Step title="Approve">
+    Before any execution, OpenAgent calls ContextScout to discover relevant context files for your task type, then creates a step-by-step plan and presents it to you. You review and either approve, request changes, or cancel. **No execution happens without your explicit approval.**
+
+    ```
+    ## Proposed Plan
+    1. Create README.md file
+    2. Add project overview section
+    3. Add installation instructions
+    4. Add usage examples
+
+    Approval needed before proceeding.
+    ```
+  </Step>
+  <Step title="Execute">
+    After approval, OpenAgent loads the required context files for the task type (code standards, documentation standards, test standards, etc.) and then either executes the steps directly or delegates to a specialist agent. For complex features, it may create a temporary session to pass context between agents.
+  </Step>
+  <Step title="Validate">
+    OpenAgent checks the quality of the work. If tests are applicable it runs them. If issues are found it **stops immediately**, reports all failures clearly, proposes a fix plan, and requests approval before applying any fix. It never auto-fixes.
+
+    ```
+    ## Validation Results
+    ❌ 3 tests failed:
+    - test_user_auth: Expected 200, got 401
+    - test_login: Missing token in response
+    - test_logout: Session not cleared
+
+    ## Proposed Fix Plan
+    1. Update auth middleware to return proper status codes
+    2. Add token generation to login endpoint
+    3. Add session cleanup to logout handler
+
+    Approval needed before proceeding with fixes.
+    ```
+  </Step>
+  <Step title="Summarize">
+    Once validation passes, OpenAgent summarizes what was accomplished and suggests next steps if relevant.
+  </Step>
+  <Step title="Confirm completion">
+    OpenAgent asks whether you are satisfied with the results. If temporary session files were created, it asks whether to clean them up. It **always confirms before deleting anything**.
+  </Step>
+</Steps>
+
+## Session management
+
+For complex tasks, OpenAgent creates a temporary session at `.tmp/sessions/{timestamp}-{task-slug}/`. This session stores:
+
+- Context files (requirements, specifications)
+- Task breakdowns created by TaskManager
+- Notes passed to specialist subagents
+- A manifest that indexes all session files by keyword
+
+Sessions are lazily initialized — they are only created when genuinely needed, not for simple tasks. Each session has a unique ID (for example, `20250118-143022-a4f2`) to prevent conflicts when multiple workstreams are active simultaneously.
+
+At the end of a task, OpenAgent asks whether you want to clean up the session files. You stay in control of what gets deleted.
+
+## Dynamic context loading
+
+OpenAgent preserves context across multi-step workflows by indexing files in a manifest. When you follow up on a previous request, OpenAgent searches the manifest by keywords to find related context files and passes them to the relevant specialist.
+
+```
+Step 1: "Build a user authentication system"
+→ OpenAgent creates features/user-auth-context.md
+→ TaskManager creates tasks/user-auth-tasks.md
+
+Step 2: "Implement the login component"
+→ OpenAgent finds user-auth context files automatically
+→ CoderAgent receives full context — no information loss
+```
+
+<Note>
+Use consistent terminology across related requests (for example, "user authentication" rather than alternating between "auth" and "login system") so OpenAgent can match context files reliably.
+</Note>
+
+## When OpenAgent delegates
+
+OpenAgent executes most tasks directly. It delegates only when the work genuinely exceeds what a single agent should tackle alone.
+
+| Condition | Delegate to |
+|---|---|
+| Feature spans 4+ files or components | TaskManager |
+| Complex task breakdown requested | TaskManager |
+| Comprehensive API or multi-page documentation | DocWriter |
+| Specialized code task (tests, review, build) | TestEngineer, CodeReviewer, BuildAgent |
+| External library involved | ExternalScout (for live docs) |
+| 1–3 files, straightforward task | Execute directly |
+
+## Usage examples
+
+<CodeGroup>
+
+```bash General tasks
+opencode --agent OpenAgent
+> "Create a user authentication system"      # building features
+> "Create a README for this project"          # documentation
+> "Explain the architecture of this codebase" # analysis
+> "Fix this bug in auth.ts"                   # small code changes
+```
+
+```bash Questions
+opencode --agent OpenAgent
+> "How do I implement authentication in Next.js?"
+> "What's the difference between JWT and sessions?"
+> "What does this function do?"
+```
+
+</CodeGroup>
+
+## Configuration
+
+OpenAgent is configured in `.opencode/agent/core/openagent.md` (local install) or `~/.config/opencode/agent/core/openagent.md` (global install). You can customize delegation thresholds, workflow stage behavior, and context loading rules by editing that file directly — no compilation required.
+
+To change the model OpenAgent uses, edit the frontmatter:
+
+```yaml
+---
+description: "Universal agent for answering queries, executing tasks, and coordinating workflows"
+model: anthropic/claude-sonnet-4-5
+---
+```
+
+Browse available models at [models.dev](https://models.dev) or run `opencode models`.
+
+## Core principles
+
+OpenAgent follows three absolute rules that cannot be overridden:
+
+1. **Approval gate** — always request approval before any execution (bash, write, edit, task delegation)
+2. **Stop on failure** — stop immediately on test failures or errors; never auto-fix
+3. **Confirm cleanup** — always confirm before deleting session files
+
+These rules exist to keep you in control and prevent the "what did the AI just do?" moments that make AI tools frustrating in production environments.

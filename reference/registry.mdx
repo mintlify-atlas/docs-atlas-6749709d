@@ -1,0 +1,344 @@
+---
+title: "Component registry: agents, commands, and tools"
+description: "registry.json is OAC's component manifest. Covers categories, dependency syntax, path conventions, validation, and adding custom components to the registry."
+keywords: ["registry", "components", "agents", "subagents", "commands", "tools", "contexts", "skills"]
+---
+
+The `registry.json` file at the root of the OpenAgents Control repository is the authoritative manifest for every installable component. The installer reads this file at runtime to resolve profiles, validate dependencies, and locate source files. Understanding its structure lets you add custom components, audit dependency chains, and verify registry integrity with the built-in validation script.
+
+## Schema and top-level structure
+
+The registry is a single JSON object at schema version `2.0.0`. Its top-level keys are:
+
+```json
+{
+  "version": "2.0.0",
+  "schema_version": "2.0.0",
+  "repository": "https://github.com/darrenhinde/OpenAgentsControl",
+  "categories": { ... },
+  "components": { ... },
+  "profiles": { ... },
+  "metadata": { ... }
+}
+```
+
+The `metadata` object records when the registry was last updated and the schema version used:
+
+```json
+"metadata": {
+  "lastUpdated": "2026-03-21",
+  "schemaVersion": "1.0.0"
+}
+```
+
+## Component categories
+
+Every component belongs to exactly one category. The five canonical categories are:
+
+| Category | Purpose |
+|---|---|
+| `essential` | Minimal components required for basic functionality |
+| `standard` | Standard components for typical use |
+| `extended` | Extended components for advanced features |
+| `specialized` | Specialized components for specific domains |
+| `meta` | Meta-level components for system generation |
+
+Additional non-canonical categories appear in the registry for organisational purposes: `core`, `content`, `data`, `development`, `utils`, `test`, and `navigation`.
+
+## Component types
+
+The `components` object contains arrays keyed by component type. The registry defines eight types: `agents`, `subagents`, `commands`, `tools`, `plugins`, `skills`, `contexts`, and `config`.
+
+### Common component schema
+
+Every component entry shares the same base shape:
+
+```json
+{
+  "id": "unique-id",
+  "name": "Human Readable Name",
+  "type": "agent | subagent | command | tool | plugin | skill | context | config",
+  "path": ".opencode/relative/path/to/file.md",
+  "description": "What this component does",
+  "tags": ["tag1", "tag2"],
+  "dependencies": ["type:id", "type:id"],
+  "category": "essential | standard | ..."
+}
+```
+
+Dependencies are expressed as `type:id` strings, for example `"subagent:contextscout"` or `"context:standards-code"`. The installer and the `validate:registry` script use these strings to detect missing components and circular references.
+
+## Agents
+
+Agents are orchestration-level entities that accept user instructions and coordinate subagents.
+
+<AccordionGroup>
+  <Accordion title="OpenAgent (core)">
+    **ID:** `openagent` | **Path:** `.opencode/agent/core/openagent.md`
+
+    Universal agent for answering queries, executing tasks, and coordinating workflows across any domain. Designed for general tasks involving 1–4 files. Depends on `task-manager`, `documentation`, `contextscout`, `externalscout`, and several context files including `standards-code`, `standards-docs`, `standards-tests`, `review-ref`, `delegation-ref`, and `external-libraries-workflow`.
+  </Accordion>
+
+  <Accordion title="OpenCoder (core)">
+    **ID:** `opencoder` | **Path:** `.opencode/agent/core/opencoder.md`
+
+    Orchestration agent for complex coding, architecture, and multi-file refactoring. Designed for tasks spanning 4+ files. Depends on `documentation`, `coder-agent`, `tester`, `reviewer`, `build-agent`, `contextscout`, `externalscout`, and context files for standards and external-libraries workflows.
+  </Accordion>
+
+  <Accordion title="OpenSystemBuilder (meta)">
+    **ID:** `system-builder` | **Path:** `.opencode/agent/meta/system-builder.md`
+
+    Generates complete context-aware AI systems from user requirements. Depends on the five system-builder subagents: `domain-analyzer`, `agent-generator`, `context-organizer`, `workflow-designer`, and `command-creator`.
+  </Accordion>
+
+  <Accordion title="OpenRepoManager (meta)">
+    **ID:** `repo-manager` | **Path:** `.opencode/agent/meta/repo-manager.md`
+
+    Meta agent for managing the OpenAgents Control repository with context-aware planning, task breakdown, and automatic documentation generation.
+  </Accordion>
+
+  <Accordion title="OpenTechnicalWriter (content)">
+    **ID:** `technical-writer` | **Path:** `.opencode/agent/content/technical-writer.md`
+
+    Expert in documentation, API docs, and technical communication.
+  </Accordion>
+
+  <Accordion title="OpenCopywriter (content)">
+    **ID:** `copywriter` | **Path:** `.opencode/agent/content/copywriter.md`
+
+    Expert in persuasive writing, marketing copy, and brand messaging.
+  </Accordion>
+
+  <Accordion title="OpenDataAnalyst (data)">
+    **ID:** `data-analyst` | **Path:** `.opencode/agent/data/data-analyst.md`
+
+    Expert in data analysis, visualization, and statistical insights.
+  </Accordion>
+
+  <Accordion title="Eval Runner (standard)">
+    **ID:** `eval-runner` | **Path:** `.opencode/agent/eval-runner.md`
+
+    Test harness for the evaluation framework. Not intended for direct use. Depends on `context:component-planning`.
+  </Accordion>
+</AccordionGroup>
+
+## Subagents
+
+Subagents are focused specialists that agents delegate narrow tasks to.
+
+<CardGroup cols={2}>
+  <Card title="TaskManager" icon="list-check">
+    **ID:** `task-manager` · category: `essential`
+
+    Breaks down complex features into small, verifiable subtasks.
+  </Card>
+  <Card title="DocWriter" icon="file-pen">
+    **ID:** `documentation` · category: `essential`
+
+    Creates and updates documentation.
+  </Card>
+  <Card title="ContextScout" icon="magnifying-glass">
+    **ID:** `contextscout` · category: `core` · v5.1.0
+
+    Discovers and retrieves the exact context files needed before any task starts. Optimised for multi-model compatibility with 20% token reduction.
+  </Card>
+  <Card title="ExternalScout" icon="arrow-up-right-from-square">
+    **ID:** `externalscout` · category: `core` · v2.0.0
+
+    Fetches live, version-specific documentation for external libraries via Context7. 42% token reduction over prior versions.
+  </Card>
+  <Card title="Context Retriever" icon="database">
+    **ID:** `context-retriever` · category: `core`
+
+    Generic context search and retrieval specialist for finding relevant context files in any repository.
+  </Card>
+  <Card title="ContextManager" icon="folder-open">
+    **ID:** `context-manager` · category: `core`
+
+    Discovers, catalogs, validates, and maintains project context structure with dependency tracking.
+  </Card>
+  <Card title="CoderAgent" icon="code">
+    **ID:** `coder-agent` · category: `standard`
+
+    Executes coding subtasks in sequence.
+  </Card>
+  <Card title="CodeReviewer" icon="shield-check">
+    **ID:** `reviewer` · category: `standard`
+
+    Performs code review with security and quality checks.
+  </Card>
+  <Card title="TestEngineer" icon="vial">
+    **ID:** `tester` · category: `standard`
+
+    Writes unit and integration tests.
+  </Card>
+  <Card title="BuildAgent" icon="hammer">
+    **ID:** `build-agent` · category: `standard`
+
+    Type checks and validates builds.
+  </Card>
+  <Card title="OpenFrontendSpecialist" icon="browser">
+    **ID:** `frontend-specialist` · category: `development`
+
+    Expert in React, Vue, and modern CSS architecture.
+  </Card>
+  <Card title="OpenDevopsSpecialist" icon="server">
+    **ID:** `devops-specialist` · category: `development`
+
+    Expert in CI/CD, infrastructure as code, and deployment automation.
+  </Card>
+  <Card title="Image Specialist" icon="image">
+    **ID:** `image-specialist` · category: `utils`
+
+    Generates and edits images using Gemini AI. Depends on `tool:gemini`.
+  </Card>
+  <Card title="DomainAnalyzer" icon="sitemap">
+    **ID:** `domain-analyzer` · category: `meta`
+
+    Analyses user domains and recommends agent architectures.
+  </Card>
+  <Card title="AgentGenerator" icon="wand-magic-sparkles">
+    **ID:** `agent-generator` · category: `meta`
+
+    Generates XML-optimised agent files following research-backed patterns.
+  </Card>
+  <Card title="ContextOrganizer" icon="folder-tree">
+    **ID:** `context-organizer` · category: `meta`
+
+    Organises and generates modular context files.
+  </Card>
+  <Card title="WorkflowDesigner" icon="diagram-project">
+    **ID:** `workflow-designer` · category: `meta`
+
+    Designs complete workflow definitions with context dependencies.
+  </Card>
+  <Card title="CommandCreator" icon="terminal">
+    **ID:** `command-creator` · category: `meta`
+
+    Creates custom slash commands with clear syntax and examples.
+  </Card>
+</CardGroup>
+
+## Commands
+
+Commands are slash-command definitions that agents and users invoke directly.
+
+| ID | Name | Category | Description |
+|---|---|---|---|
+| `test` | Test Pipeline | standard | Run the complete testing pipeline |
+| `commit` | Smart Commit | standard | Create intelligent git commits with context |
+| `context` | Context Manager | essential | Harvest summaries, extract knowledge, organise context |
+| `add-context` | Add Context | essential | Interactive wizard to add project patterns using Project Intelligence standard |
+| `clean` | Clean Project | standard | Clean build artifacts and temporary files |
+| `optimize` | Code Optimizer | standard | Optimise code performance and bundle size |
+| `prompt-enhancer` | Prompt Enhancer | standard | Enhance and improve AI prompts |
+| `prompt-optimizer` | Prompt Optimizer | standard | Advanced prompt optimiser achieving 30–50% token reduction |
+| `worktrees` | Git Worktrees Manager | specialized | Manage git worktrees for parallel development |
+| `build-context-system` | Build Context System | meta | Interactive system builder for complete context-aware AI architectures |
+| `validate-repo` | Validate Repository | standard | Comprehensive validation of repository consistency between CLI, docs, registry, and components |
+| `check-context-deps` | Check Context Deps | standard | Validate context file dependencies across agents and registry |
+| `analyze-patterns` | Analyze Patterns | standard | Analyse codebase for patterns and similar implementations |
+| `create-agent` | Create Agent | standard | Create new OpenCode agents following research-backed best practices |
+| `create-tests` | Create Tests | standard | Generate comprehensive test suites for OpenCode agents |
+| `commit-openagents` | Commit OpenAgents Control | standard | Smart commit for the oac repository with conventional commits |
+
+## Tools
+
+Tools are runtime TypeScript modules that agents can invoke.
+
+| ID | Name | Category | Description |
+|---|---|---|---|
+| `gemini` | Gemini AI Tool | specialized | Image generation, editing, and analysis via Gemini AI. Depends on `tool:env`. |
+| `env` | Environment Manager | essential | Load and manage environment variables securely. |
+
+## Plugins
+
+| ID | Name | Category | Description |
+|---|---|---|---|
+| `notify` | Generic Notifier | specialized | Generic notification system for alerts. |
+
+## Skills
+
+Skills are packaged capabilities with their own SKILL.md entry point, optional router script, and supporting files.
+
+| ID | Name | Category | Files |
+|---|---|---|---|
+| `task-management` | Task Management | essential | `SKILL.md`, `router.sh`, `scripts/task-cli.ts` |
+| `context7` | Context7 | essential | `SKILL.md`, `README.md`, `library-registry.md`, `navigation.md` |
+| `context-manager` | Context Manager | essential | `SKILL.md`, `router.sh` |
+| `smart-router-skill` | Smart Router Skill | specialized | `SKILL.md`, personality config, and three themed workflow scripts |
+
+## Contexts
+
+The registry lists over 100 context files in the `contexts` array. They span categories including core standards, workflows, system-builder templates, UI patterns, development principles, project intelligence, and navigation guides. Notable examples:
+
+- `essential-patterns` — Core development patterns and best practices
+- `standards-code` / `standards-tests` / `standards-docs` / `standards-analysis` — Modular standard references
+- `task-delegation-basics` / `feature-breakdown` / `session-management` — Workflow guides
+- `context-paths-config` — **Critical** paths configuration loaded by agents via `@` reference
+- `root-navigation` — **Critical** root navigation file; ContextScout starts discovery here
+- `external-libraries-workflow` — Guide for fetching current documentation when adding agents or skills
+- `registry-dependencies` — Maintains registry quality through dependency validation
+
+## Declaring dependencies
+
+A component declares its dependencies as an array of `type:id` strings:
+
+```json
+{
+  "id": "opencoder",
+  "dependencies": [
+    "subagent:documentation",
+    "subagent:coder-agent",
+    "subagent:tester",
+    "subagent:reviewer",
+    "subagent:build-agent",
+    "subagent:contextscout",
+    "subagent:externalscout",
+    "context:standards-code",
+    "context:task-delegation-basics",
+    "context:component-planning",
+    "context:external-libraries-workflow"
+  ]
+}
+```
+
+Glob patterns are also supported in profile component lists (e.g., `"context:core/*"` installs every context under the `core/` path prefix).
+
+## Adding custom components
+
+Follow the path conventions already used in the registry:
+
+```
+.opencode/agent/core/my-agent.md          # Orchestrator agents
+.opencode/agent/subagents/code/my-sub.md  # Code-focused subagents
+.opencode/command/my-command.md           # Slash commands
+.opencode/tool/my-tool/index.ts           # TypeScript tools
+.opencode/skills/my-skill/SKILL.md        # Skills
+.opencode/context/my-domain/my-file.md    # Context files
+```
+
+Then add a matching entry to `registry.json` under the correct type array.
+
+<Note>
+  Custom components added to a local `registry.json` are only visible to that installation. They are not merged with the upstream registry when you run `./install.sh` again.
+</Note>
+
+## Validating registry integrity
+
+The `validate:registry` npm script cross-checks every component entry against the file system and validates that all declared dependencies resolve:
+
+```bash
+# Standard validation
+npm run validate:registry
+
+# Verbose output
+npm run validate:registry:verbose
+
+# Attempt to auto-fix minor issues
+npm run validate:registry:fix
+```
+
+<Tip>
+  Run `npm run validate:registry` before committing changes to `registry.json` to catch missing files or broken dependency references before they reach CI.
+</Tip>

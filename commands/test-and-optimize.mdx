@@ -1,0 +1,227 @@
+---
+title: "test and optimize: validate and improve your code"
+description: "Reference for /test, /optimize, /validate-repo, and /analyze-patterns: four OAC commands for code validation, quality auditing, and refactoring detection."
+keywords: ["test", "optimize", "validate-repo", "analyze-patterns", "code quality", "performance"]
+---
+
+OAC ships four commands focused on keeping your code correct, efficient, and consistent. They are independent of each other and can be run at any point in your workflow — before committing, after adding a feature, or as part of a periodic review.
+
+## `/test` — run the full testing pipeline
+
+The `/test` command runs your project's complete quality pipeline in a fixed sequence and repeats failed steps until everything passes.
+
+**What it does:**
+
+1. Runs `pnpm type:check` to catch TypeScript errors
+2. Runs `pnpm lint` to enforce code style rules
+3. Runs `pnpm test` to execute your test suite
+4. Reports any failures with details
+5. Applies fixes and repeats until all steps pass
+6. Reports success
+
+**Usage:**
+
+```bash
+/test
+```
+
+**When to use it:**
+
+- Before running `/commit` to make sure you are not committing broken code
+- After a large refactor to verify nothing broke
+- When CI is failing and you want a local diagnosis
+
+<Note>
+`/test` expects `pnpm` scripts named `type:check`, `lint`, and `test` in your `package.json`. If your project uses a different package manager or script names, run the pipeline manually.
+</Note>
+
+---
+
+## `/optimize` — analyze and improve code quality
+
+The `/optimize` command takes a file path, a directory, or no argument at all and performs a multi-pass analysis covering performance, security, error handling, and maintainability. It produces a prioritized report with specific locations, impact assessments, and implementation guidance.
+
+**Usage:**
+
+```bash
+/optimize                         # analyze recently changed files
+/optimize src/api/users.ts        # analyze a specific file
+/optimize src/components/         # analyze a directory
+```
+
+**What it analyzes:**
+
+<AccordionGroup>
+  <Accordion title="Performance">
+    - O(n²) or worse time-complexity patterns
+    - Unnecessary nested loops and redundant calculations
+    - N+1 database queries and missing indexes
+    - Missing caching opportunities and blocking operations that could be async
+    - React: unnecessary re-renders and missing memoization
+    - Bundle size and asset optimization
+  </Accordion>
+  <Accordion title="Security">
+    - Missing input sanitization and SQL injection vectors
+    - XSS attack vectors and path traversal risks
+    - Missing authentication checks and session management gaps
+    - Sensitive data in logs or error messages
+    - Missing rate limiting and insecure API endpoints
+    - Outdated dependencies with known vulnerabilities
+  </Accordion>
+  <Accordion title="Error handling and edge cases">
+    - Missing try-catch blocks and silent failures
+    - Null and undefined handling
+    - Empty array and object scenarios
+    - Network failure and race condition possibilities
+  </Accordion>
+  <Accordion title="Maintainability">
+    - Code duplication and overly complex functions
+    - Missing documentation for critical logic
+    - Tight coupling between components
+    - Hard-coded limits and single points of failure
+  </Accordion>
+</AccordionGroup>
+
+**Example report structure:**
+
+```text
+## 📋 Code Optimization Analysis
+
+### ⚡ Performance Issues Found
+
+#### 🔴 Critical Performance Issues
+- Issue: N+1 query in user list endpoint
+- Location: src/api/users.ts:84
+- Impact: 1 query per user instead of 1 total
+- Solution: Use db.users.findMany with include
+
+### 🔒 Security Vulnerabilities
+
+#### 🚨 Critical Security Issues
+- Vulnerability: Raw user input passed to query string
+- Risk Level: High
+- Location: src/search.ts:42
+- Fix: Use parameterized queries
+
+### 💡 Optimization Recommendations
+
+#### 🎯 Priority 1 (Critical)
+1. Fix N+1 query in user list endpoint
+2. Patch SQL injection risk in search
+```
+
+---
+
+## `/validate-repo` — verify OAC repository integrity
+
+`/validate-repo` is a read-only command that checks the entire OAC repository for internal consistency. It is primarily useful when you have added or modified agents, context files, or registry entries and want to confirm everything is properly wired together.
+
+**Usage:**
+
+```bash
+/validate-repo
+```
+
+**What it checks:**
+
+<CardGroup cols={2}>
+  <Card title="Registry integrity" icon="list-check">
+    JSON syntax, required fields on every component, file path references, and no duplicate IDs.
+  </Card>
+  <Card title="Component existence" icon="folder-open">
+    Every agent, subagent, command, tool, plugin, and context file referenced in `registry.json` actually exists on disk.
+  </Card>
+  <Card title="Profile consistency" icon="users">
+    Component counts match documentation, dependencies are satisfied, and no component appears twice in the same profile.
+  </Card>
+  <Card title="Cross-references" icon="link">
+    Agent dependencies exist, subagent references are valid, and dependency chains are complete with no circular references.
+  </Card>
+</CardGroup>
+
+**Output format:**
+
+```text
+✅ Registry JSON syntax valid
+✅ Component file existence: 45/47 found
+✅ Profile consistency: all 5 profiles match README counts
+
+⚠️ Warnings (1):
+  - Orphaned file: .opencode/context/legacy/old-patterns.md
+    Not referenced in registry — add it or delete it.
+
+❌ Errors (1):
+  - Missing context file: .opencode/context/core/advanced-patterns.md
+    Referenced by developer, full, advanced profiles.
+    Action: create the file or remove the registry entry.
+
+📊 Statistics:
+  - Total components: 47
+  - Agents: 3 | Subagents: 15 | Commands: 8
+  - Context files: 15 | Config: 2
+  - Dependency health: 22/23 valid (96%)
+```
+
+<Note>
+`/validate-repo` is non-destructive. It only reads files — it never modifies or deletes anything.
+</Note>
+
+---
+
+## `/analyze-patterns` — find patterns and refactoring opportunities
+
+`/analyze-patterns` scans your codebase for recurring code patterns, groups similar implementations by similarity score, and suggests where to consolidate or standardize.
+
+**Usage:**
+
+```bash
+/analyze-patterns                                        # scan current directory with default depth
+/analyze-patterns --pattern="error-handling" --language=ts
+/analyze-patterns --pattern="factory" --depth=deep --output=json
+/analyze-patterns --pattern="api-endpoint" --language=js --output=markdown
+```
+
+**Parameters:**
+
+| Parameter | Description |
+|---|---|
+| `--pattern` | Pattern name or regex to search for. Predefined names include `singleton`, `factory`, `observer`, `error-handling`, `async-patterns`, `api-endpoint`, `middleware`. |
+| `--language` | Filter by language: `js`, `ts`, `py`, `go`, `rust`, `java`, etc. |
+| `--depth` | Search depth: `shallow` (current directory), `medium` (`src/`), or `deep` (entire repository). |
+| `--output` | Output format: `text` (default), `json`, or `markdown`. |
+
+**Example output (text format):**
+
+```text
+Pattern Analysis Report
+=======================
+
+Pattern: error-handling
+Occurrences: 12
+Files: src/api/users.ts, src/api/orders.ts, src/lib/db.ts
+
+Implementations:
+  1. src/api/users.ts:42  - try-catch with Response.json error (similarity: 98%)
+  2. src/api/orders.ts:67 - try-catch with Response.json error (similarity: 95%)
+  3. src/lib/db.ts:18     - try-catch with console.error only  (similarity: 72%)
+
+Refactoring Suggestions:
+  - Extract shared error handler to src/lib/handle-error.ts
+  - Standardize db.ts to use the same Response.json pattern
+  - Consider a higher-order function to wrap route handlers
+
+Quality Insights:
+  - 10 of 12 implementations are consistent (83%)
+  - 2 implementations deviate: consider updating to match majority
+```
+
+**When to use it:**
+
+- Before a refactoring session to understand how widespread a pattern is
+- When onboarding onto a new codebase to learn its conventions
+- When you suspect code duplication but want a concrete map before cleaning up
+- To generate a markdown report to share with your team
+
+<Tip>
+Use `/analyze-patterns` before running `/add-context` on an existing project — the pattern report gives you concrete examples to paste into the wizard's API and component questions.
+</Tip>

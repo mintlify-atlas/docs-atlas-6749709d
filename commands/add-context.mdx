@@ -1,0 +1,139 @@
+---
+title: "add-context: teach agents your coding patterns"
+description: "Run /add-context to capture your stack, patterns, and conventions through a short wizard. Agents load the resulting context files automatically on every task."
+keywords: ["add-context", "project intelligence", "context wizard", "coding patterns", "MVI"]
+---
+
+The `/add-context` command is the fastest way to teach OAC agents how your project works. It runs an interactive 6-question wizard inside your OpenCode session that takes roughly 5 minutes to complete. When finished, agents load your answers automatically before generating any code — so the output matches your patterns without requiring manual refactoring.
+
+## What it creates
+
+Running `/add-context` saves files to `.opencode/context/project-intelligence/` in your project directory (always local, never global by default). Two files are created:
+
+- **`technical-domain.md`** — your tech stack, API pattern, component pattern, naming conventions, code standards, and security requirements, all kept under 200 lines following the MVI (Minimal Viable Information) principle.
+- **`navigation.md`** — a quick-reference index of all project intelligence files.
+
+<Note>
+Context files are plain Markdown. You can read, edit, or delete them at any time with a text editor.
+</Note>
+
+## The 6 questions
+
+The wizard walks through these six questions in sequence:
+
+<Steps>
+  <Step title="Tech stack">
+    Describe your framework, language, database, and styling library. For example: `Next.js + TypeScript + PostgreSQL + Tailwind`.
+  </Step>
+  <Step title="API endpoint example">
+    Paste an actual API endpoint from your project. The wizard captures your validation approach, error handling style, and response format.
+  </Step>
+  <Step title="Component example">
+    Paste a component from your project. The wizard captures your component structure, prop patterns, and TypeScript usage.
+  </Step>
+  <Step title="Naming conventions">
+    Specify naming rules for files, components, functions, and database objects — for example, `kebab-case` for files and `PascalCase` for components.
+  </Step>
+  <Step title="Code standards">
+    List your coding standards one per line. Examples: `TypeScript strict mode`, `validate with Zod`, `use Drizzle for DB queries`.
+  </Step>
+  <Step title="Security requirements">
+    List your security requirements one per line. Examples: `validate all user input`, `use parameterized queries`, `sanitize before rendering`.
+  </Step>
+</Steps>
+
+## Usage
+
+```bash
+/add-context                 # Interactive wizard (recommended)
+/add-context --update        # Update existing context
+/add-context --tech-stack    # Update tech stack only
+/add-context --patterns      # Update code patterns only
+/add-context --global        # Save to global config (~/.config/opencode/) instead of project
+```
+
+## Example interaction
+
+Below is what the wizard looks like when you run `/add-context` for the first time:
+
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+No project intelligence found. Let's create it!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Saving to: .opencode/context/project-intelligence/
+
+Will create:
+  - project-intelligence/technical-domain.md (tech stack & patterns)
+  - project-intelligence/navigation.md (quick overview)
+
+Takes ~5 min. Follows MVI compliance (<200 lines).
+
+Ready? [y/n]: y
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Q 1/6: What's your tech stack?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Examples:
+  1. Next.js + TypeScript + PostgreSQL + Tailwind
+  2. React + Python + MongoDB + Material-UI
+  3. Vue + Go + MySQL + Bootstrap
+
+Your tech stack: Next.js + TypeScript + PostgreSQL + Tailwind
+```
+
+After answering all six questions, the wizard shows a full preview of `technical-domain.md` before writing anything to disk. You confirm, edit, or cancel before any files are saved.
+
+## Updating context as your project evolves
+
+Run `/add-context --update` whenever your patterns change. Common triggers:
+
+- Adding a new library (Stripe, Twilio, etc.)
+- Changing your API format or component structure
+- Migrating your ORM (Prisma → Drizzle)
+- Updating security requirements
+
+When you update, the wizard shows each existing pattern and asks you to keep, update, or remove it. The version in the file's frontmatter is incremented automatically — content changes bump the minor version (1.2 → 1.3), structural changes bump the major version (1.x → 2.0).
+
+<Tip>
+After finishing a significant feature, run `/add-context --update` to capture any new patterns you introduced. Commit the updated files so your team gets the changes automatically.
+</Tip>
+
+## What changes after running it
+
+Before `/add-context`, agents write generic code:
+
+```typescript
+// Generic — before /add-context
+export async function POST(request: Request) {
+  const data = await request.json();
+  return Response.json({ success: true });
+}
+```
+
+After `/add-context` captures your patterns, the same agent produces:
+
+```typescript
+// Pattern-matched — after /add-context
+export async function POST(request: Request) {
+  const body = await request.json();
+  const validated = UserSchema.parse(body);       // your Zod validation
+  const result = await db.users.create(validated); // your Drizzle ORM
+  return Response.json(result, { status: 201 });   // your response format
+}
+```
+
+## Tips for effective context creation
+
+- **Use real code from your project.** Paste actual API routes and components — the wizard captures nuance that generic examples miss.
+- **Keep standards concise.** The MVI principle limits `technical-domain.md` to 200 lines. Focus on your most common patterns and add more later.
+- **Commit the output.** Files in `.opencode/context/project-intelligence/` are version-controlled. New team members inherit your patterns automatically on day one.
+- **Test it right away.** After running the wizard, ask an agent to generate a simple API endpoint. If it matches your patterns, you're done.
+
+## Related commands
+
+- `/context` — Manage, harvest, and organize context files
+- `/context validate` — Check file integrity
+- `/context map` — View the context file structure
+- `/context migrate` — Copy global context into your project

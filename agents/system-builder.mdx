@@ -1,0 +1,154 @@
+---
+title: "SystemBuilder: generate custom AI systems"
+description: "SystemBuilder interviews you and generates a complete .opencode system: orchestrators, subagents, context files, workflows, and slash commands for your domain."
+---
+
+SystemBuilder is a meta-agent that generates entire AI systems from scratch. Rather than writing code or answering questions, its job is to understand your domain through an interactive interview and then produce a production-ready `.opencode` folder architecture tailored to your specific use case. In 10–15 minutes, it builds what would otherwise take hours: a main orchestrator agent, specialized subagents, organized context files, workflow definitions, and custom slash commands. The generated system scores 8+/10 on quality criteria for agent design, context organization, workflow completeness, and documentation clarity.
+
+## Installation
+
+SystemBuilder is included in the **advanced** installation profile:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/darrenhinde/OpenAgentsControl/main/install.sh | bash -s advanced
+```
+
+If you already have the `developer` or `full` profile installed, run the advanced profile and choose "Skip existing" when prompted about collisions — only the system builder components will be added.
+
+## Invoking SystemBuilder
+
+```bash
+/build-context-system
+```
+
+## The interactive wizard
+
+SystemBuilder gathers your requirements through a structured five-phase interview. Each phase asks 2–4 questions and adapts based on your domain type (development, business, or hybrid).
+
+<Steps>
+  <Step title="Domain and purpose">
+    - What is your domain? (e-commerce, data engineering, customer support, etc.)
+    - What is the purpose of this system?
+    - Who are the primary users?
+  </Step>
+  <Step title="Use cases and workflows">
+    - What are your top 3–5 use cases?
+    - What is the complexity of each? (simple / moderate / complex)
+    - Are there dependencies between tasks?
+  </Step>
+  <Step title="Complexity and scale">
+    - How many specialized agents do you need?
+    - What types of knowledge do agents need? (domain / process / standards / templates)
+    - What are your state management requirements?
+  </Step>
+  <Step title="Integrations and tools">
+    - What external tools or APIs are involved?
+    - Do you need file operations?
+    - What custom slash commands would be useful?
+  </Step>
+  <Step title="Review and confirmation">
+    - SystemBuilder presents the full architecture summary.
+    - You confirm or revise before generation begins.
+  </Step>
+</Steps>
+
+## What gets generated
+
+After the interview, SystemBuilder routes to five specialized subagents that each handle a part of the system:
+
+- **DomainAnalyzer** — identifies core concepts, terminology, and recommended agent specializations
+- **AgentGenerator** — creates XML-optimized agent files following research-backed prompt patterns
+- **ContextOrganizer** — generates modular context files (50–200 lines each) organized by domain, processes, standards, and templates
+- **WorkflowDesigner** — designs reusable workflow definitions with stage checkpoints and context dependency maps
+- **CommandCreator** — creates custom slash commands with routing and concrete usage examples
+
+The output is a complete `.opencode/` directory:
+
+```
+.opencode/
+├── agent/
+│   ├── {domain}-orchestrator.md      # Main coordinator agent
+│   └── subagents/
+│       ├── {specialist-1}.md
+│       ├── {specialist-2}.md
+│       └── {specialist-3}.md
+├── context/
+│   ├── domain/                        # Core domain knowledge
+│   ├── processes/                     # Workflow definitions
+│   ├── standards/                     # Quality rules
+│   └── templates/                     # Reusable patterns
+├── workflows/
+│   ├── {workflow-1}.md
+│   └── {workflow-2}.md
+├── command/
+│   ├── {command-1}.md
+│   └── {command-2}.md
+├── README.md
+├── ARCHITECTURE.md
+├── TESTING.md
+└── QUICK-START.md
+```
+
+## Use cases
+
+<Tabs>
+  <Tab title="Developers">
+    ```
+    Domain: Software Development
+    Purpose: Automate code review and testing
+    Result: Custom dev workflow system with static-analyzer,
+            security-scanner, and test-validator subagents
+    ```
+  </Tab>
+  <Tab title="Business teams">
+    ```
+    Domain: Customer Support
+    Purpose: Automate ticket routing and responses
+    Result: Custom support automation system with routing,
+            response-generator, and escalation subagents
+    ```
+  </Tab>
+  <Tab title="Data teams">
+    ```
+    Domain: Data Engineering
+    Purpose: Automate ETL pipelines and quality validation
+    Result: Custom data pipeline system with extractor,
+            transformer, quality-validator, and loader subagents
+    ```
+  </Tab>
+  <Tab title="Content teams">
+    ```
+    Domain: Content Marketing
+    Purpose: Generate and schedule multi-platform content
+    Result: Custom content workflow system with research-assistant,
+            content-generator, and publisher subagents
+    ```
+  </Tab>
+</Tabs>
+
+## Handling existing projects
+
+SystemBuilder detects whether a `.opencode/` directory already exists and offers three merge strategies:
+
+| Strategy | What happens | Best for |
+|---|---|---|
+| **Extend existing** (recommended) | Keeps all existing files, adds new capabilities, creates unified orchestrator | Adding features to active projects |
+| **Create separate** | New system in a separate namespace, both systems coexist | Multi-domain projects |
+| **Replace existing** | Backs up to `.opencode.backup.{timestamp}/`, creates fresh system | Complete redesigns |
+
+<Warning>
+The Replace strategy backs up your existing system before overwriting it, but use it with caution. Extend existing is the right choice for most situations.
+</Warning>
+
+## Integration with existing agents
+
+SystemBuilder detects and integrates with any agents already installed. When generating a new system, it reuses existing agents (like `openagent`, `opencoder`, `build-agent`, `tester`, `reviewer`) where applicable and creates new agents only to fill gaps. The generated orchestrator routes to both existing and new agents through a unified coordination layer.
+
+## Quality standards
+
+All generated systems are held to the same quality bar:
+
+- Agent files use optimal component ordering (context → role → task → instructions)
+- Context files are 50–200 lines (modular and scannable)
+- Workflows have clear stages, prerequisites, success criteria, and error handling
+- Documentation includes README, architecture guide, testing checklist, and usage examples

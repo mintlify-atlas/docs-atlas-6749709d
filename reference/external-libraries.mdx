@@ -1,0 +1,207 @@
+---
+title: "ExternalScout: live docs for 18+ libraries"
+description: "ExternalScout fetches live, version-accurate docs via Context7 for 18+ libraries. Covers supported packages, trigger conditions, and fallback behavior."
+keywords: ["ExternalScout", "Context7", "external libraries", "documentation", "live docs", "ContextScout"]
+---
+
+ExternalScout is a focused subagent (version 2.0.0) whose sole job is to retrieve current, version-specific documentation for external libraries and frameworks at the moment an agent needs it. Rather than relying on training data that may be months or years out of date, ExternalScout queries the Context7 API for live documentation snippets, filters them to the sections relevant to the user's query, and persists the results to `.tmp/external-context/` so other agents can reference them without re-fetching.
+
+## How it works
+
+ExternalScout runs a five-stage workflow for each documentation request:
+
+<Steps>
+  <Step title="Check cache">
+    ExternalScout first looks in `.tmp/external-context/` for existing files matching the library and topic. If a cached file is less than seven days old, it returns the cached locations immediately without making any network requests.
+  </Step>
+  <Step title="Detect library and tech stack">
+    ExternalScout reads `.opencode/skills/context7/library-registry.md` to match the user's query against known library names and aliases. It also detects the surrounding tech stack — for example, whether TanStack Query is being used with Next.js App Router or with TanStack Start — and identifies common integration patterns that should be included in the fetch.
+  </Step>
+  <Step title="Fetch from Context7">
+    ExternalScout sends an enhanced, context-aware query to the Context7 API:
+
+    ```bash
+    curl -s "https://context7.com/api/v2/context?libraryId=LIBRARY_ID&query=ENHANCED_QUERY&type=txt"
+    ```
+
+    The enhanced query adds tech stack context and common pitfall keywords to the base query so the returned documentation is more targeted.
+  </Step>
+  <Step title="Persist to .tmp">
+    Fetched and filtered documentation is written to `.tmp/external-context/{package-name}/{topic}.md` with a frontmatter header recording the source, library, fetch timestamp, and official docs link. A `.manifest.json` index is maintained in the same directory.
+
+    Writing files is mandatory — ExternalScout is considered to have failed if it summarises documentation without writing it.
+  </Step>
+  <Step title="Return locations">
+    ExternalScout returns the written file paths alongside a brief summary and the official documentation link. Calling agents can then pass these paths to subagents as context.
+  </Step>
+</Steps>
+
+## Supported libraries
+
+The library registry at `.opencode/skills/context7/library-registry.md` lists every library ExternalScout knows how to fetch. It is grouped into categories:
+
+### Database and ORM
+
+<CardGroup cols={2}>
+  <Card title="Drizzle ORM" icon="database">
+    Package: `drizzle-orm` — schema organisation, migrations, relational queries, transactions, TypeScript types.
+  </Card>
+  <Card title="Prisma" icon="database">
+    Package: `prisma` — schema, migrations, client, relations, TypeScript.
+  </Card>
+</CardGroup>
+
+### Authentication
+
+<CardGroup cols={2}>
+  <Card title="Better Auth" icon="lock">
+    Package: `better-auth` — Next.js integration, Drizzle adapter, social providers, session management, 2FA.
+  </Card>
+  <Card title="NextAuth.js" icon="lock">
+    Package: `next-auth` — providers, callbacks, sessions, JWT.
+  </Card>
+  <Card title="Clerk" icon="id-card">
+    Package: `clerk` — authentication, user management, organisations.
+  </Card>
+</CardGroup>
+
+### Frontend frameworks
+
+<CardGroup cols={2}>
+  <Card title="Next.js" icon="globe">
+    Package: `next` — App Router, Server Actions, Server Components, routing, middleware, API routes.
+  </Card>
+  <Card title="React" icon="react">
+    Package: `react` — hooks, components, state, effects, context.
+  </Card>
+  <Card title="TanStack Query" icon="arrows-rotate">
+    Package: `@tanstack/react-query` — useQuery, useMutation, prefetching, caching, Server Components.
+  </Card>
+  <Card title="TanStack Router" icon="route">
+    Package: `@tanstack/react-router` — routing, type-safe routes, loaders, navigation.
+  </Card>
+  <Card title="TanStack Start" icon="bolt">
+    Package: `@tanstack/start` — full-stack setup, server functions, file routing.
+  </Card>
+</CardGroup>
+
+### Infrastructure and deployment
+
+<CardGroup cols={2}>
+  <Card title="Cloudflare Workers" icon="cloud">
+    Package: `cloudflare-workers` — routing, KV storage, Durable Objects, bindings, middleware.
+  </Card>
+  <Card title="AWS Lambda" icon="server">
+    Package: `aws-lambda` — handlers, layers, environment variables, triggers, TypeScript.
+  </Card>
+  <Card title="Vercel" icon="triangle">
+    Package: `vercel` — deployment, environment variables, edge functions, serverless.
+  </Card>
+</CardGroup>
+
+### UI libraries and styling
+
+<CardGroup cols={2}>
+  <Card title="Shadcn/ui" icon="palette">
+    Package: `shadcn-ui` — components, installation, theming, customisation.
+  </Card>
+  <Card title="Radix UI" icon="circle-half-stroke">
+    Package: `@radix-ui` — primitives, accessibility, composition.
+  </Card>
+  <Card title="Tailwind CSS" icon="paintbrush">
+    Package: `tailwindcss` — configuration, utilities, responsive design, dark mode.
+  </Card>
+</CardGroup>
+
+### State management
+
+<CardGroup cols={2}>
+  <Card title="Zustand" icon="box">
+    Package: `zustand` — store creation, selectors, middleware, TypeScript.
+  </Card>
+  <Card title="Jotai" icon="atom">
+    Package: `jotai` — atoms, async atoms, utilities.
+  </Card>
+</CardGroup>
+
+### Validation and forms
+
+<CardGroup cols={2}>
+  <Card title="Zod" icon="shield">
+    Package: `zod` — schema validation, TypeScript inference, parsing, refinements.
+  </Card>
+  <Card title="React Hook Form" icon="pen-to-square">
+    Package: `react-hook-form` — register, validation, errors, TypeScript.
+  </Card>
+</CardGroup>
+
+### Testing
+
+<CardGroup cols={2}>
+  <Card title="Vitest" icon="vial">
+    Package: `vitest` — configuration, testing, mocking, coverage.
+  </Card>
+  <Card title="Playwright" icon="theater-masks">
+    Package: `playwright` — browser automation, testing, selectors, assertions.
+  </Card>
+</CardGroup>
+
+## How ContextScout triggers ExternalScout
+
+ContextScout (the context-discovery subagent) consults the library registry whenever a user query mentions a library name. The trigger logic is:
+
+1. User asks about a library or framework.
+2. No internal context exists in `.opencode/context/development/frameworks/` for that library.
+3. The query matches a library name, alias, or package name in `library-registry.md`.
+
+When all three conditions are true, ContextScout recommends invoking ExternalScout as a subagent. Both OpenAgent and OpenCoder declare `subagent:externalscout` as a dependency, so ExternalScout is always available when these core agents are installed.
+
+## The Context7 API integration
+
+ExternalScout uses the Context7 API via two endpoints:
+
+```bash
+# Step 1: resolve library ID
+curl -s "https://context7.com/api/v2/libs/search?libraryName=react&query=hooks" | jq '.results[0].id'
+
+# Step 2: fetch documentation
+curl -s "https://context7.com/api/v2/context?libraryId=/websites/react_dev_reference&query=useState&type=txt"
+```
+
+No API key is required for basic usage, though the API is rate-limited. The `type=txt` parameter returns plain-text output that is easier to filter than the default JSON format.
+
+## Fallback to official documentation
+
+If the Context7 API fails or returns insufficient results, ExternalScout falls back to fetching from official documentation sites directly using `webfetch`:
+
+1. Fetch the main documentation page for the topic.
+2. If a tech stack was detected, also fetch the framework-specific integration page.
+3. Fetch any troubleshooting or common-issues page if available.
+
+The fallback ensures documentation is always retrieved rather than fabricated from training data.
+
+## Benefits for the agent workflow
+
+Because ExternalScout fetches documentation at task time, every agent that depends on it always has access to the library's current API surface, not a snapshot from the model's training cut-off. This matters most for:
+
+- Libraries with frequent breaking changes (Next.js App Router, TanStack Query v5)
+- Authentication libraries where security behaviour changes between versions
+- Libraries where configuration patterns differ significantly across major versions
+
+## The library registry file
+
+To add a new library, edit `.opencode/skills/context7/library-registry.md` and follow the template:
+
+```markdown
+#### Library Name
+- **Aliases**: `alias1`, `alias2`, `package-name`
+- **Docs**: https://example.com/docs
+- **Context7**: `use context7 for library-name`
+- **Common topics**: topic1, topic2, topic3
+```
+
+You may optionally add query optimisation patterns — a table of user intents mapped to optimised Context7 query strings — to improve result relevance for that library.
+
+<Note>
+  ExternalScout only has permission to read files under `.opencode/skills/context7/` and `.tmp/external-context/`, and to make outbound `curl` requests to `context7.com`. It cannot read project source files or run arbitrary shell commands.
+</Note>

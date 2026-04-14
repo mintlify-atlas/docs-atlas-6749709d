@@ -1,0 +1,199 @@
+---
+title: "Multi-language support: TypeScript to Rust"
+description: "How OpenCoder auto-detects project language from config files and adapts its toolchain for TypeScript, Python, Go, Rust, and C# with idiomatic conventions."
+keywords: ["multi-language", "TypeScript", "Python", "Go", "Rust", "C#", "dotnet", "language detection", "OpenCoder"]
+---
+
+OpenCoder — OAC's development specialist agent — is designed to adapt to the language of the project it is working in. Language detection is automatic: OpenCoder reads project files such as `package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, or `*.csproj` to identify the stack, then switches to the appropriate runtime, type-checker, linter, and test runner for that language. You do not need to configure language support; it is inferred from what already exists in the project.
+
+## Supported languages and toolchains
+
+### TypeScript / JavaScript
+
+<CardGroup cols={2}>
+  <Card title="Runtime" icon="play">
+    `node`, `bun`, or `deno` — detected by the presence of `package.json`, `bun.lock`, or `deno.json`.
+  </Card>
+  <Card title="Type checking" icon="shield-check">
+    `tsc` — TypeScript compiler. Run incrementally after each implementation step.
+  </Card>
+  <Card title="Linting" icon="magnifying-glass-chart">
+    `eslint` — Applied after type checking to catch style and logic issues.
+  </Card>
+  <Card title="Testing" icon="vial">
+    `jest`, `vitest`, or `mocha` — detected by test configuration files or `package.json` scripts.
+  </Card>
+</CardGroup>
+
+**Language-specific conventions OpenCoder follows:**
+
+- Functional, type-first approach
+- Explicit types over inference where clarity is improved
+- Immutable data structures and pure functions where possible
+- Type guards and null safety throughout
+- Strong preference for `async`/`await` over callbacks
+
+---
+
+### Python
+
+<CardGroup cols={2}>
+  <Card title="Runtime" icon="play">
+    `python` — detected by `requirements.txt`, `pyproject.toml`, or `setup.py`.
+  </Card>
+  <Card title="Type checking" icon="shield-check">
+    `mypy` — static type analysis using type hints.
+  </Card>
+  <Card title="Linting" icon="magnifying-glass-chart">
+    `pylint` or `flake8` — applied after type checking.
+  </Card>
+  <Card title="Testing" icon="vial">
+    `pytest` or `unittest`.
+  </Card>
+</CardGroup>
+
+**Language-specific conventions:**
+
+- Pythonic patterns and idioms throughout
+- Type hints on all function signatures
+- `pytest` preferred over `unittest` for new test files
+- Dataclasses or Pydantic models for structured data
+
+---
+
+### Go
+
+<CardGroup cols={2}>
+  <Card title="Build" icon="hammer">
+    `go build` — detected by `go.mod`.
+  </Card>
+  <Card title="Linting" icon="magnifying-glass-chart">
+    `golangci-lint` — comprehensive linting with multiple linters enabled.
+  </Card>
+  <Card title="Testing" icon="vial">
+    `go test` — standard library test runner.
+  </Card>
+</CardGroup>
+
+**Language-specific conventions:**
+
+- Idiomatic Go — interfaces over inheritance, explicit error handling
+- `error` returned as second return value, never panicked silently
+- Table-driven tests using `t.Run` for subtests
+- Package layout follows standard Go project structure
+
+---
+
+### Rust
+
+<CardGroup cols={2}>
+  <Card title="Build" icon="hammer">
+    `cargo check` and `cargo build` — detected by `Cargo.toml`.
+  </Card>
+  <Card title="Linting" icon="magnifying-glass-chart">
+    `cargo clippy` — Rust's official linter with pedantic suggestions enabled.
+  </Card>
+  <Card title="Testing" icon="vial">
+    `cargo test` — unit tests inline with `#[cfg(test)]` and integration tests under `tests/`.
+  </Card>
+</CardGroup>
+
+**Language-specific conventions:**
+
+- Ownership and borrowing handled explicitly — no unnecessary `clone`
+- `Result` and `Option` used consistently; `.unwrap()` only in tests
+- Traits preferred over dynamic dispatch where performance matters
+- Error types implement `std::error::Error` or use `thiserror`
+
+---
+
+### C# / .NET
+
+<CardGroup cols={2}>
+  <Card title="Runtime" icon="play">
+    `dotnet run` — detected by `*.csproj` or `*.sln` files.
+  </Card>
+  <Card title="Type checking" icon="shield-check">
+    Built-in Roslyn compiler — C# is statically typed; type errors surface at build time.
+  </Card>
+  <Card title="Linting" icon="magnifying-glass-chart">
+    `dotnet format` and Roslyn analyzers — enforces style and code quality rules.
+  </Card>
+  <Card title="Testing" icon="vial">
+    `dotnet test` with xUnit, Shouldly for fluent assertions, and NSubstitute for mocking.
+  </Card>
+</CardGroup>
+
+**Language-specific conventions:**
+
+- Minimal APIs for web endpoints (ASP.NET Core)
+- CQRS pattern with MediatR for command/query separation
+- Records for immutable data transfer objects
+- `async`/`await` throughout with `CancellationToken` support
+- Nullable reference types enabled; no `!` (null-forgiving) operators without justification
+
+---
+
+### Other languages
+
+OpenCoder's context system is language-agnostic. For languages not listed above, OpenCoder adapts by:
+
+- Reading existing project files to understand conventions already in use
+- Following idiomatic patterns for the language detected
+- Running whatever build and test commands are configured in the project (e.g., `Makefile` targets)
+- Delegating to ContextScout to find any internal context files documenting language-specific standards
+
+<Info>
+  The context system stores language and framework-specific guides in `.opencode/context/development/`. If your project uses a language that benefits from custom conventions, create a context file there and ContextScout will surface it automatically.
+</Info>
+
+## Language detection workflow
+
+OpenCoder reads the project root for well-known configuration files in this order:
+
+1. `package.json` / `bun.lock` / `deno.json` → TypeScript/JavaScript
+2. `requirements.txt` / `pyproject.toml` / `setup.py` → Python
+3. `go.mod` → Go
+4. `Cargo.toml` → Rust
+5. `*.csproj` / `*.sln` → C#/.NET
+
+When multiple languages are present (e.g., a Python backend with a TypeScript frontend), OpenCoder detects both and applies the correct toolchain to each subdirectory independently.
+
+## Validation cadence
+
+Regardless of language, OpenCoder validates incrementally — not just at the end of implementation:
+
+```
+For each implementation step:
+  1. Write the code
+  2. Run type checks (tsc / mypy / Roslyn / cargo check)
+  3. Run linting (eslint / pylint / golangci-lint / clippy / dotnet format)
+  4. Run relevant tests
+  5. Confirm no regressions before moving to the next step
+```
+
+This cadence catches errors early, keeps the codebase in a working state throughout, and makes rollbacks straightforward.
+
+## Compatibility notes
+
+The install script and agent framework itself require only bash 3.2+, `curl`, and `jq`. No language runtime is needed to install OAC. Language runtimes are only required at implementation time when OpenCoder invokes type checkers and test runners in your project.
+
+| Platform | Bash version | Status |
+|---|---|---|
+| macOS 13+ (default bash) | 3.2.57 | Fully supported |
+| macOS 13+ (Homebrew bash) | 5.2 | Fully supported |
+| Ubuntu 24.04 | 5.2.21 | Fully supported (fixed in v1.1.0) |
+| Ubuntu 22.04 | 5.1.16 | Fully supported |
+| Ubuntu 20.04 | 5.0.17 | Fully supported |
+| Debian 11 | 5.1.4 | Fully supported |
+| Fedora 38 | 5.2.15 | Fully supported |
+| Arch Linux | 5.2.21 | Fully supported |
+| Alpine 3.18 | 5.2.15 | Fully supported (requires bash package) |
+| Windows — Git Bash | 4.4.23 | Fully supported |
+| Windows — WSL2 Ubuntu | 5.1.16 | Fully supported |
+| Windows — cmd.exe | N/A | Not supported |
+| Bash < 3.2 | — | Not supported |
+
+<Note>
+  A compatibility issue with bash 5.x on Ubuntu 24.04 (where `set -e` triggered premature exits on arithmetic increment operations) was fixed in v1.1.0 by changing all `((variable++))` expressions to `variable=$((variable + 1))`. If you encounter unexpected exits on modern Linux, update to the latest installer.
+</Note>
